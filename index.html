@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PetuhMobile</title>
+<style>
+:root{--surface:#ffffff;--toast:#1b1b1b;--r:#e11d2e;--r2:#a80018;--bg:#fff;--card:#fff3f4;--tx:#1b1b1b;--mu:#7a7a7a;--bd:#f5ccd0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html[data-theme="dark"]{--bg:#121214;--surface:#1c1c1f;--card:#2a1c1e;--tx:#f2f2f3;--mu:#a3a3a8;--bd:#4a2c30;--toast:#3a3a3f;color-scheme:dark}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+#app{max-width:480px;margin:0 auto;padding:14px 16px 96px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.logo{font-weight:900;font-size:22px;color:var(--r);letter-spacing:-.5px}
+.ava{overflow:hidden;padding:0;width:40px;height:40px;border-radius:50%;background:var(--r);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;border:0;font-size:17px}
+h2{font-size:18px;margin:20px 0 10px}
+.bank{background:linear-gradient(135deg,var(--r),var(--r2));color:#fff;border-radius:20px;padding:18px;box-shadow:0 8px 20px rgba(225,29,46,.25)}
+.bank small{opacity:.85}.bank .big{font-size:32px;font-weight:800;margin:4px 0 14px}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:10px}
+.card b{display:block}.mu{color:var(--mu);font-size:13px}
+.btn{display:block;width:100%;background:var(--r);color:#fff;border:0;border-radius:14px;padding:14px;font-size:16px;font-weight:700;margin-top:10px}
+.btn.sm{width:auto;padding:9px 14px;font-size:14px;margin:0;border-radius:11px}
+.btn.o{background:var(--surface);color:var(--r);border:2px solid var(--r)}
+.chips{display:flex;gap:8px;margin:8px 0}
+.chip{flex:1;text-align:center;padding:10px 0;border-radius:12px;border:2px solid var(--bd);background:var(--surface);font-weight:700;color:var(--tx)}
+.chip.on{border-color:var(--r);background:var(--r);color:#fff}
+input[type=range]{width:100%;accent-color:var(--r)}
+.in{width:100%;border:2px solid var(--bd);border-radius:14px;padding:13px;font-size:16px;margin-bottom:10px;background:var(--surface);color:var(--tx);outline:0}
+.in:focus{border-color:var(--r)}
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--bd);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+.nav button{flex:1;border:0;background:none;padding:10px 0 8px;font-size:12px;font-weight:700;color:var(--mu)}
+.nav button span{display:block;font-size:22px}
+.nav button.on{color:var(--r)}
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);transform:translateX(-50%);background:var(--toast);color:#fff;padding:11px 18px;border-radius:14px;font-size:14px;z-index:20;max-width:90%;text-align:center}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10;display:flex;align-items:flex-end}
+.sheet>div{max-height:92vh;overflow:auto;background:var(--surface);width:100%;max-width:480px;margin:0 auto;border-radius:22px 22px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px))}
+.hero{text-align:center;padding:30px 0 16px}.hero .e{font-size:64px}
+.tag{display:inline-block;background:var(--r);color:#fff;border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const PM_SUPABASE_URL="https://jhceswcesybwpjpmjsfx.supabase.co";
+const PM_SUPABASE_KEY="sb_publishable_rVgWj0O4u1PfccqncAIwjA_lDsUSwk3";
+const pmClient=window.supabase?.createClient(PM_SUPABASE_URL,PM_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,lock:async(_n,_t,fn)=>await fn()}});
+let pmCollectorSession=false;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rub=n=>Math.round(n).toLocaleString('ru-RU')+' ₽';
+const LIM=250000,BIGDEBT=50000;
+let S=null,tab='credit',cr={a:5000,d:14};
+try{S=JSON.parse(localStorage.getItem('pm')||'null')}catch(e){}
+if(S){if(!S.msgPlan)S.msgPlan={};if(!S.msgDone)S.msgDone=[];if(!S.cr)S.cr=[];if(!S.items)S.items=[];if(!S.used)S.used=[];if(!S.notes)S.notes=[];S.late=S.late||0;S.clean=S.clean||0;S.unread=S.unread||0;if(S.sim)S.sim.num=S.sim.num.replace(/^\+7 /,'+67 ')}
+function save(){try{localStorage.setItem('pm',JSON.stringify(S))}catch(e){}pmQueueLoans()}
+const rnd=n=>Math.floor(Math.random()*n);
+const digits=n=>Array.from({length:n},()=>rnd(10)).join('');
+const simOpts=[
+ {n:'Стандартный',p:100,mk:()=>'+67 900 '+digits(3)+' '+digits(2)+' '+digits(2)},
+ {n:'Петушиный',p:500,mk:()=>'+67 777 '+digits(3)+' '+digits(2)+' '+digits(2)},
+ {n:'Блатной',p:1500,mk:()=>'+67 888 '+(digits(1)+'00')+' '+digits(2)+' '+digits(2)},
+ {n:'Легендарный',p:3000,fixed:true,mk:()=>'+6767676767676769'}
+];
+simOpts.forEach(o=>o.num=o.mk());
+const tariffs=[
+ {n:'PetuhStart',g:'5 ГБ',gb:5,p:199},
+ {n:'PetuhMed',g:'30 ГБ',gb:30,p:499},
+ {n:'PetuhGod',g:'∞ ГБ',gb:0,p:999}
+];
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
+function log(t){S.log.unshift(t);S.log=S.log.slice(0,6)}
+
+let DV=null;
+const rc=d=>{let h=0;for(const ch of 'reg|'+d+'|petuh')h=(h*41+ch.charCodeAt(0))>>>0;return String(h%900000+100000)};
+function dev(){if(DV)return DV;try{DV=localStorage.getItem('pm_dev')}catch(e){}if(!DV){DV=digits(6);try{localStorage.setItem('pm_dev',DV)}catch(e){}}return DV}
+function okReg(){let a='';try{a=localStorage.getItem('pm_ok')||''}catch(e){}return a===rc(dev())}
+function viewGate(){
+ $('#app').innerHTML=`<div class="hero"><div class="e">🐓</div><div class="logo" style="font-size:30px" onclick="tapLogo()">PetuhMobile</div><div class="mu" style="margin-top:6px">Вход только по приглашению</div></div>
+ <div class="card" style="text-align:center"><div class="mu">Ваш код доступа. Отправьте его владельцу</div><div style="font-size:40px;font-weight:900;color:var(--r);letter-spacing:4px;margin:8px 0">${dev()}</div></div>
+ <div class="mu" style="margin:12px 0">Отправьте код владельцу. Когда он разрешит, нажмите кнопку ниже.</div><button class="btn" id="gchk" onclick="enter()">Проверить разрешение</button>`;
+}
+async function enter(){
+ const b=document.getElementById('gchk');b.disabled=true;b.textContent='Проверяем…';
+ try{
+  await pmEnsureAnonymousAuth();
+  const r=await pmRpc('pm_claim_approval',{p_device:dev()});if(r.error)throw r.error;
+  try{localStorage.setItem('pm_ok',rc(dev()))}catch(e){}
+  render();
+ }catch(e){toast(String(e.message||'').includes('NO_APPROVAL')?'Владелец ещё не разрешил регистрацию':(e.message||'Ошибка проверки'));b.disabled=false;b.textContent='Проверить разрешение'}
+}
+function viewReg(){
+ $('#app').innerHTML=`<div class="hero"><div class="e">🐓</div><div class="logo" style="font-size:30px">PetuhMobile</div><div class="mu" style="margin-top:6px">Кредитный банк и связь для своих</div></div>
+ <h2>Регистрация</h2>
+ <input class="in" id="f1" placeholder="ФИО" autocomplete="name">
+ <input class="in" id="f2" placeholder="Возраст" type="number" inputmode="numeric">
+ <input class="in" id="f3" placeholder="Адрес" autocomplete="street-address">
+ <input class="in" id="f4" placeholder="Страна" autocomplete="country-name">
+ <input class="in" id="f5" placeholder="Телефон (необязательно)" type="tel" inputmode="tel" autocomplete="tel">
+ <div class="mu" style="margin:-4px 0 10px">Если укажете номер, коллектор увидит его и сможет позвонить по поводу долга. Можно оставить пустым.</div>
+ <button class="btn" onclick="reg()">Создать профиль</button>`;
+}
+function reg(){
+ const v=i=>document.getElementById('f'+i).value.trim();
+ const age=parseInt(v(2),10);
+ if(v(1).length<2){toast('ФИО: минимум 2 символа');return}
+ if(v(5)&&!/^\+?[0-9 ()-]{5,20}$/.test(v(5))){toast('Телефон: только цифры, + ( ) и дефис');return}
+ if(!v(1)||!v(3)||!v(4)||!(age>0&&age<121)){toast('Заполните все поля, возраст 1–120');return}
+ S={u:{fio:v(1),age,addr:v(3),country:v(4),phone:v(5),card:digits(4)},bal:5000,cr:[],items:[],used:[],notes:[],late:0,clean:0,unread:0,sim:null,tar:null,log:['🎁 Приветственный бонус 5 000 ₽']};
+ save();render();
+ pmSyncProfile().then(()=>{pmQueueLoans();pmPhoneSync()}).catch(()=>{});
+}
+function $(s){return document.querySelector(s)}
+
+function render(){
+ if(spinning){pendingR=true;return}
+ if(S&&S.ban){viewBan();return}
+ if(!S){okReg()?viewReg():viewGate();return}
+ const ini=esc(S.u.fio.charAt(0).toUpperCase());
+ let body=tab==='credit'?viewCredit():tab==='job'?viewWork():tab==='feed'?viewFeed():viewServices();
+ $('#app').innerHTML=`<div class="top"><div class="logo" onclick="tapLogo()">🐓 PetuhMobile</div><div style="display:flex;gap:10px;align-items:center"><button class="ava" style="background:var(--surface);color:var(--r);border:2px solid var(--r);font-size:18px" onclick="toggleTheme()">${theme==='dark'?'☀️':'🌙'}</button><button class="ava" style="background:var(--surface);color:var(--r);border:2px solid var(--r);font-size:18px;position:relative;overflow:visible" onclick="notes()">🔔${S.unread?'<span class="tag" style="position:absolute;top:-8px;right:-8px;padding:1px 6px">'+S.unread+'</span>':''}</button><button class="ava" onclick="profile()">${av()}</button></div></div>${body}
+ <div class="nav"><button class="${tab==='credit'?'on':''}" onclick="go('credit')"><span>💳</span>Кредит</button><button class="${tab==='svc'?'on':''}" onclick="go('svc')"><span>📶</span>Услуги связи</button><button class="${tab==='job'?'on':''}" onclick="go('job')"><span>💰</span>Заработок</button><button class="${tab==='feed'?'on':''}" onclick="go('feed')"><span>🎬</span>Лента</button></div>`;
+ if(tab==='credit'){prev();pmTopLoad(false);if(mk==='auction')pmAucLoad(false)}else if(tab==='job'&&sub==='exchange')pmExLoad(false);
+ if(tab==='feed'){pmVidLoad(false);setTimeout(feedObserve,60)}
+}
+function go(t){tab=t;render();window.scrollTo(0,0)}
+
+const RATE=0.015,DAYS=3,PIN='6767';
+const cc=c=>{let h=0;for(const ch of c+'|petuh')h=(h*31+ch.charCodeAt(0))>>>0;return String(h%900000+100000)};
+const owe=c=>{const o=Date.now()-c.till;return Math.max(0,c.back*(o>0?1.3+0.1*Math.floor(o/864e5):1)-(c.coll||0))};
+const debt=()=>S.cr.filter(c=>!c.paid).reduce((s,c)=>s+owe(c),0);
+function viewCredit(){
+ const D=debt(),av=Math.max(0,LIM-D);
+ const st=av>50000?5000:500,max=Math.max(st,Math.floor(av/st)*st);
+ cr.a=Math.min(max,Math.max(st,Math.round(cr.a/st)*st));
+ const open=S.cr.filter(c=>!c.paid);
+ return `<div class="bank"><small>Карта PetuhMobile •••• ${S.u.card}</small><div class="big">${rub(S.bal)}</div><div class="row"><small>${esc(S.u.fio)}</small><small>Лимит ${rub(LIM)}</small></div><div class="row" style="margin-top:14px"><button class="btn sm" style="flex:1;background:var(--surface);color:var(--r)" onclick="sendMoney()">📤 Перевести</button><button class="btn sm" style="flex:1;background:var(--surface);color:var(--r)" onclick="getMoney()">🪪 Мой номер</button></div></div>
+ ${bonusCard()}
+ ${(()=>{const r=rating();return `<div class="card" style="margin-top:12px"><div class="row"><b>Кредитный рейтинг</b><span style="display:flex;align-items:center;gap:8px;font-weight:800"><i style="width:18px;height:18px;border-radius:50%;background:${r.c};border:2px solid ${r.b};display:inline-block"></i>${r.n}</span></div></div>`})()}
+ <div class="card" style="margin-top:12px"><div class="row"><div><b>Долг банку</b><span class="mu">Доступно: ${rub(av)}</span></div><b style="color:var(--r);font-size:20px">${rub(D)}</b></div></div>
+ ${open.map(c=>{const late=Date.now()>c.till;return `<div class="card" style="border-color:var(--r)"><div class="row"><div><b>${rub(owe(c))}${c.item?' · '+esc(c.item):''}</b><span class="mu">вернуть до ${new Date(c.till).toLocaleString('ru-RU',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})}</span></div>${late?'<span class="tag">Просрочен!</span>':'<span class="tag lt" data-t="'+c.till+'" style="background:#555">'+fmtLeft(c.till-Date.now())+'</span>'}</div>
+ ${late?'<div style="color:var(--r);font-weight:700;margin-top:8px">🚨 Штраф: +'+rub(owe(c)+(c.coll||0)-c.back)+' (+30% и ещё +10% за каждый день)</div>':''}<div class="mu" style="margin-top:8px">Код кредита: <b style="display:inline;color:var(--tx);font-size:16px">${c.code}</b><br>Назовите код владельцу. Он даст код подтверждения, и сумма спишется с карты.</div>
+ <input class="in" id="k${c.code}" placeholder="Код подтверждения" inputmode="numeric" style="margin:8px 0 0">
+ <button class="btn sm" style="margin-top:8px;width:100%" onclick="repay('${c.code}')">Погасить</button>${late||(c.ext||0)>=2?'':'<button class="btn sm o" style="margin-top:8px;width:100%" onclick="extend(\''+c.code+'\')">Продлить на 1 день · комиссия '+rub(c.back*0.1)+'</button>'}</div>`}).join('')}
+ <h2>Взять кредит</h2>
+ <div class="card"><div class="row"><span class="mu">Сумма</span><b id="am" style="color:var(--r);font-size:22px">${rub(cr.a)}</b></div>
+ <input type="range" id="rg" min="${st}" max="${max}" step="${st}" value="${cr.a}" oninput="cr.a=+this.value;prev()" ${av<500?'disabled':''}>
+ <div class="mu" style="margin-top:6px">Срок: ровно ${DAYS} дня. Ставка 1,5% за весь срок. Петух не обманет 🐓</div><div class="row" style="margin-top:6px"><span>К возврату</span><b id="ret"></b></div>
+ <button class="btn" onclick="take()">Получить кредит</button></div>
+ <h2>Маркет, аукцион и питомцы</h2><div class="chips"><button class="chip ${mk==='market'?'on':''}" onclick="setMk('market')">🛒 Маркет</button><button class="chip ${mk==='auction'?'on':''}" onclick="setMk('auction')">🔨 Аукцион</button><button class="chip ${mk==='pets'?'on':''}" onclick="setMk('pets')">🐾 Питомцы</button></div>
+ ${mk==='market'?marketHtml():mk==='pets'?petsHtml():'<div id="pmauc">'+aucHtml()+'</div>'}
+ <div id="pmtop">${topHtml()}</div>
+ <h2>История</h2>${S.log.map(l=>`<div class="card mu" style="color:var(--tx)">${esc(l)}</div>`).join('')}
+ <div class="card" style="text-align:center;margin-top:16px;border-color:var(--r)"><span class="mu">⚠️ Сотрудники PetuhMobile могут выбивать кредит любым способом.</span></div><button class="btn o" onclick="collectorLogin()">🔎 Режим коллектора</button>`;
+}
+const RAT={w:{n:'Белый',c:'#ffffff',b:'#b5b5b5'},g:{n:'Зелёный',c:'#1fa84f',b:'#1fa84f'},y:{n:'Жёлтый',c:'#f5b800',b:'#f5b800'},r:{n:'Красный',c:'#d40000',b:'#d40000'}};
+function rating(){
+ if(!S.cr.length)return RAT.w;
+ const now=Date.now(),open=S.cr.filter(c=>!c.paid);
+ if(open.some(c=>now>c.till)||(S.late>0&&S.clean<2))return RAT.r;
+ if(open.some(c=>c.till-now<864e5)||debt()>=LIM*0.7)return RAT.y;
+ return RAT.g;
+}
+const av=()=>S.u.photo?'<img src="'+esc(S.u.photo)+'" style="width:100%;height:100%;object-fit:cover" alt="">':esc(S.u.fio.charAt(0).toUpperCase());
+function note(x,sender='',time=Date.now()){
+ S.notes.unshift({t:time,x,sender});S.notes=S.notes.slice(0,30);S.unread=(S.unread||0)+1;toast(sender?sender+': '+x:x)
+}
+const dayKey=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
+const atLocal=(d,h,m)=>{const x=new Date(d);x.setHours(h,m,0,0);return x.getTime()};
+function msgPlan(key){
+ S.msgPlan=S.msgPlan||{};
+ if(S.msgPlan[key])return S.msgPlan[key];
+ const base=new Date(key+'T12:00:00');
+ const pick=()=>Math.floor(Math.random()*1440);
+ const nightA=Math.floor(Math.random()*421),nightB=Math.floor(Math.random()*421);
+ S.msgPlan[key]={
+  daily:[{id:key+'-bal',t:atLocal(base,0,0)+pick()*60000,x:'Ваш баланс выглядит подозрительно. Мы наблюдаем.'},{id:key+'-loan',t:atLocal(base,0,0)+pick()*60000,x:'Здравствуйте возьмите в долг пожал'}],
+  night:[{id:key+'-night1',t:atLocal(base,23,0)+nightA*60000,x:'Не прячьтесь. Мы просто хотим поговорить'},{id:key+'-night2',t:atLocal(base,23,0)+nightB*60000,x:'Мы ближе чем ты думаешь'}]
+ };
+ if(S.msgPlan[key].night[0].t===S.msgPlan[key].night[1].t)S.msgPlan[key].night[1].t+=60000;
+ return S.msgPlan[key];
+}
+function scheduledMessages(now){
+ const today=dayKey(now),yesterday=dayKey(now-86400000);let changed=false;
+ S.msgDone=S.msgDone||[];
+ const events=[];
+ const todayPlan=msgPlan(today);
+ events.push(...todayPlan.daily,...todayPlan.night,{id:today+'-rafal',t:atLocal(new Date(today+'T12:00:00'),0,0),x:'меня найдут на дне озера',sender:'RAFAL BIRD'});
+ events.push(...msgPlan(yesterday).night);
+ events.sort((a,b)=>a.t-b.t);
+ for(const e of events){
+  if(now>=e.t&&!S.msgDone.includes(e.id)){
+   note(e.x,e.sender||'',e.t);S.msgDone.push(e.id);changed=true;
+  }
+ }
+ S.msgDone=S.msgDone.slice(-40);
+ const keys=Object.keys(S.msgPlan||{});for(const k of keys)if(k!==today&&k!==yesterday)delete S.msgPlan[k];
+ return changed;
+}
+function check(){
+ if(!S)return false;
+ let ch=false;const now=Date.now();
+ S.cr.forEach(c=>{
+  if(c.paid)return;
+  const left=c.till-now,nm=c.item||rub(c.back);
+  if(left<=0){
+   if(!c.late){c.late=true;S.late=(S.late||0)+1;S.clean=0;ch=true;note('🚨 Просрочка! Кредит '+nm+'. Штраф +30%, рейтинг: Красный')}
+   const d=Math.floor(-left/864e5);
+   if(d>(c.nd||0)){c.nd=d;ch=true;note('🚨 Просрочка '+d+' дн.: долг вырос до '+rub(owe(c))+'. Коллекторы уже выехали')}
+  }else if(left<864e5&&!c.n24){c.n24=true;ch=true;note('⏰ Кредит '+nm+': меньше 24 часов до срока!')}
+ });
+ {const TAXP=3*864e5,per=Math.floor(Date.now()/TAXP);
+  if(S.taxP==null){S.taxP=per;ch=true}
+  else if(per>S.taxP){let tot=0;for(let k=0;k<Math.min(3,per-S.taxP);k++){const t=Math.floor(S.bal*0.05);S.bal-=t;tot+=t}S.taxP=per;ch=true;log('🧾 Налоговая проверка: −'+rub(tot));note('🧾 Налоговая проверка: списано '+rub(tot)+' (5% от баланса)')}}
+ if(copCheck())ch=true;
+ if(petCheck())ch=true;
+ if(S.job&&S.job.dl&&Date.now()>S.job.dl){note('❌ Срочный заказ отменён: вы не успели отдать');S.job=null;S.jcd=Date.now()+CDJOB*1000;ch=true}
+ if(S.job&&!S.job.nd&&Date.now()>=S.job.end){S.job.nd=1;ch=true;note('🛵 Заказ «'+S.job.n+'» доставлен — заберите оплату')}
+ if(S.sim&&bill('sim','SIM '+S.sim.num))ch=true;
+ if(S.tar&&bill('tar','Тариф '+S.tar.n))ch=true;
+ if(S.tar&&!S.tar.off&&S.tar.gb&&!S.tar.nz&&gbLeft(S.tar)<=0){S.tar.nz=1;ch=true;note('📵 Гигабайты закончились. Докупите +5 ГБ или дождитесь продления')}
+ if(scheduledMessages(now))ch=true;
+ return ch;
+}
+function bill(k,nm){
+ const x=S[k];if(!x||x.off)return false;
+ let ch=false;const now=Date.now();
+ if(now>=x.till){
+  if(x.auto){
+   while(now>=x.till&&S.bal>=x.p){S.bal-=x.p;x.till+=MO;x.extra=0;x.nz=0;log('📅 Списано '+rub(x.p)+': '+nm);ch=true}
+   if(now>=x.till){x.off=true;ch=true;note('⛔ '+nm+' отключён: не хватило денег на карте. Нужно '+rub(x.p))}
+   else note('💳 Автосписание '+rub(x.p)+': '+nm);
+  }else{x.off=true;ch=true;note('⛔ '+nm+' отключён: срок истёк')}
+ }else if(x.till-now<864e5&&x.nt!==x.till){x.nt=x.till;ch=true;note(x.auto?'⏰ Через 24 часа спишется '+rub(x.p)+': '+nm:'⏰ Через 24 часа отключится: '+nm)}
+ return ch;
+}
+function notes(){
+ S.unread=0;save();
+ const d=sheet('<div class="row"><b style="font-size:20px">Уведомления</b><button class="btn sm o" id="cl">Закрыть</button></div><div style="margin-top:12px;max-height:55vh;overflow:auto">'+(S.notes.length?S.notes.map(n=>'<div class="card" style="'+(n.sender==='RAFAL BIRD'?'border:2px solid #222;background:#f0f0f0':'')+'">'+(n.sender?'<b style="display:block;color:#111;font-size:12px;letter-spacing:1px;margin-bottom:5px">'+esc(n.sender)+'</b>':'')+'<div>'+esc(n.x)+'</div><span class="mu">'+new Date(n.t).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</span></div>').join(''):'<div class="mu">Пока пусто</div>')+'</div>');
+ d.querySelector('#cl').onclick=()=>d.remove();
+ render();
+}
+function pickPhoto(inp,d){
+ const f=inp.files[0];if(!f)return;
+ const r=new FileReader();
+ r.onload=()=>{const im=new Image();
+  im.onload=()=>{const s=Math.min(im.width,im.height),c=document.createElement('canvas');c.width=c.height=160;
+   c.getContext('2d').drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,160,160);
+   S.u.photo=c.toDataURL('image/jpeg',.8);save();d.remove();render();profile();toast('Фото обновлено')};
+  im.onerror=()=>toast('Не удалось открыть фото');
+  im.src=r.result};
+ r.readAsDataURL(f);
+}
+const ITEMS=[{n:'El patron',p:50000,s:'Редкий лот',e:'🕶️'},{n:'Дилдо',p:3000,s:'Хит продаж',e:'🍆'},{n:'Бургер',p:1500,s:'Горячий',e:'🍔'},{n:'Уран 230',p:250000,s:'Кредит даже с жёлтым рейтингом',e:'☢️',big:true,days:14},{n:'Дверь из старого офиса PetuhMobile',p:25000,s:'Антиквариат',e:'🚪'},{n:'Мозг Магомеда',p:12000,s:'Эксклюзив',e:'🧠'}];
+const MAXC=3;
+function addItem(name,price){
+  const c=S.items.filter(n=>n===name).length,ic=S.ic=S.ic||{};
+  const old=ic[name]!=null?ic[name]:price;
+  ic[name]=c>0?(old*c+price)/(c+1):price;
+  S.items.push(name);
+}
+function buyItem(i,mode){
+ piAccrue();
+ const it=ITEMS[i];
+ if(S.items.filter(n=>n===it.n).length>=MAXC){toast('У вас уже максимум: '+MAXC+' шт. «'+it.n+'»');return}
+ if(mode!=='card'&&S.cr.some(c=>!c.paid&&c.item===it.n)){toast('Сначала закройте кредит на «'+it.n+'»');return}
+ if(mode==='card'){
+  if(S.bal<it.p){toast('Не хватает денег на карте');return}
+  S.bal-=it.p;addItem(it.n,it.p);log('🛒 PetuhMarket: «'+it.n+'» куплен с карты за '+rub(it.p));
+  save();render();toast('«'+it.n+'» куплен с карты');return;
+ }
+ if(it.big&&rating()===RAT.r){toast('С красным рейтингом кредит на этот товар недоступен');return}
+ if(!it.big&&debt()+it.p>LIM){toast('Не хватает свободного кредитного лимита: доступно '+rub(Math.max(0,LIM-debt())));return}
+ S.cr.push({uid:pmUid(),amt:it.p,code:digits(5),back:it.p*(1+RATE),till:Date.now()+(it.days||DAYS)*864e5,days:it.days||DAYS,paid:false,item:it.n});
+ addItem(it.n,it.p);log('🛒 PetuhMarket: «'+it.n+'» в кредит');
+ save();render();toast('Заказ оформлен на PetuhMarket');
+}
+function prev(){const a=$('#am'),r=$('#ret');if(a)a.textContent=rub(cr.a);if(r)r.textContent=rub(cr.a*(1+RATE))}
+function take(){
+ if(LIM-debt()<cr.a){toast('Превышен лимит кредита');return}
+ S.cr.push({uid:pmUid(),amt:cr.a,code:digits(5),back:cr.a*(1+RATE),till:Date.now()+DAYS*864e5,paid:false});
+ S.bal+=cr.a;log('💸 Кредит '+rub(cr.a)+' на '+DAYS+' дня');
+ save();render();toast('Кредит одобрен! Кукареку 🐓');
+}
+function repay(code){
+ const c=S.cr.find(x=>x.code===code&&!x.paid),v=document.getElementById('k'+code).value.trim();
+ if(!c)return;
+ if(v!==cc(code)){toast('Неверный код подтверждения');return}
+ const o=owe(c);if(S.bal<o){toast('Не хватает денег на карте: нужно '+rub(o));return}
+ S.bal-=o;c.paid=true;c.paidAt=Date.now();if(!c.late)S.clean=(S.clean||0)+1;log('✅ Кредит '+rub(o)+' погашен, списано с карты');
+ save();render();toast('Кредит закрыт');
+}
+function sheet(h){const d=document.createElement('div');d.className='sheet';d.onclick=e=>{if(e.target===d)d.remove()};d.innerHTML='<div>'+h+'</div>';document.body.appendChild(d);return d}
+const tc=s=>{let h=0;for(const ch of s+'|tr')h=(h*37+ch.charCodeAt(0))>>>0;return String(h%9000+1000)};
+function sendMoney(){
+ const d=sheet('<b style="font-size:20px">Перевод по номеру карты</b><div class="mu" style="margin:8px 0">Введите виртуальный номер получателя. Деньги придут ему сами.</div><input class="in" id="tn" placeholder="Виртуальный номер (PM…)" autocapitalize="characters"><input class="in" id="ta" placeholder="Сумма, ₽" type="number" inputmode="numeric"><button class="btn" id="go">Перевести</button><button class="btn o" id="cl">Закрыть</button>');
+ d.querySelector('#cl').onclick=()=>d.remove();
+ const b=d.querySelector('#go');
+ b.onclick=async()=>{
+  const num=d.querySelector('#tn').value.trim().toUpperCase(),a=Math.floor(+d.querySelector('#ta').value);
+  if(!num){toast('Введите номер получателя');return}
+  if(!(a>0&&a<=500000)){toast('Сумма перевода: от 1 до 500 000 ₽');return}
+  if(a>S.bal){toast('Не хватает денег на карте');return}
+  if(num===pmVCN){toast('Нельзя переводить самому себе');return}
+  b.disabled=true;b.textContent='Отправляем…';
+  try{
+   await pmSyncProfile();
+   const r=await pmRpc('pm_send_transfer',{p_virtual_card_number:num,p_amount:a});if(r.error)throw r.error;
+   const nm=(r.data&&r.data.to_name)||num;
+   S.bal-=a;log('📤 Перевод '+rub(a)+' → '+nm);save();d.remove();render();toast('Переведено '+rub(a)+': '+nm);
+  }catch(e){toast(e.message||'Не удалось перевести');b.disabled=false;b.textContent='Перевести'}
+ };
+}
+function getMoney(){
+ const d=sheet('<b style="font-size:20px">Мой номер карты</b><div class="mu" style="margin:8px 0">Дайте этот номер другу, и перевод придёт автоматически.</div><div style="font-size:24px;font-weight:900;color:var(--r);word-break:break-all;margin:12px 0">'+esc(pmVCN||'Номер ещё не получен: откройте профиль')+'</div><button class="btn" id="cp">Скопировать</button><button class="btn o" id="cl">Закрыть</button>');
+ d.querySelector('#cl').onclick=()=>d.remove();
+ d.querySelector('#cp').onclick=()=>{try{navigator.clipboard.writeText(pmVCN||'').then(()=>toast('Скопировано')).catch(()=>toast('Не удалось скопировать'))}catch(e){toast('Не удалось скопировать')}};
+}
+let tp=0,tt;
+function tapLogo(){tp++;clearTimeout(tt);tt=setTimeout(()=>tp=0,1500);if(tp>=5){tp=0;ownerLogin()}}
+function ownerLogin(){
+ const d=sheet('<b style="font-size:20px">Режим владельца</b><input class="in" id="pin" type="password" inputmode="numeric" placeholder="PIN" style="margin-top:12px"><button class="btn" id="ok">Войти</button>');
+ d.querySelector('#ok').onclick=()=>{if(d.querySelector('#pin').value!==PIN){toast('Неверный PIN');return}d.remove();ownerPanel()};
+}
+function ownerPanel(){
+ const d=sheet('<b style="font-size:20px">Панель владельца</b><div class="mu" style="margin:8px 0">Подтвердить оплату: код кредита, который назвал друг</div><input class="in" id="oc" placeholder="Код кредита (5 цифр)" inputmode="numeric"><button class="btn" id="go">Подтвердить оплату</button><div id="res" style="text-align:center;margin-top:14px"></div><button class="btn o" id="cl">Закрыть</button>');
+ d.querySelector('#cl').onclick=()=>d.remove();
+  d.querySelector('#go').onclick=()=>{const v=d.querySelector('#oc').value.trim();if(!/^\d{5}$/.test(v)){toast('Код — 5 цифр');return}d.querySelector('#res').innerHTML='Код подтверждения для друга:<div style="font-size:38px;font-weight:900;color:var(--r)">'+cc(v)+'</div>'};
+}
+
+const MO=30*864e5;
+const gbLeft=t=>{if(!t.gb)return Infinity;const tot=t.gb+(t.extra||0),used=Math.max(0,(Date.now()-(t.till-MO))/864e5)*t.gb/25;return Math.max(0,tot-used)};
+const dts=x=>new Date(x.till).toLocaleDateString('ru-RU');
+const st=x=>x.off?'Оплата просрочена':(x.auto?'Автосписание '+dts(x):'Отключится '+dts(x));
+const tools=k=>{const x=S[k];return `<div class="row" style="margin-top:10px;gap:8px">${x.off?`<button class="btn sm" onclick="renew('${k}')">Продлить</button>`:''}<button class="btn sm o" onclick="auto('${k}')">${x.auto?'Отключить автопродление':'Включить автопродление'}</button></div>`};
+function viewServices(){
+ const s=S.sim,t=S.tar;
+ const sim=s?`<div class="card"><div class="row"><div><b style="font-size:18px">${esc(s.num)}</b><span class="mu">SIM «${esc(s.n)}» · ${rub(s.p)}/мес</span><span class="mu">${st(s)}</span></div><span class="tag" ${s.off?'style="background:#555"':''}>${s.off?'Отключена':'Активна'}</span></div>${tools('sim')}</div>`
+ :simOpts.map((o,i)=>`<div class="card"><div class="row"><div><b>${o.n}</b><span class="mu">${o.num}</span></div><button class="btn sm" onclick="buySim(${i})">${rub(o.p)}/мес</button></div></div>`).join('');
+ let cur='';
+ if(t){const tot=t.gb+(t.extra||0),g=gbLeft(t);
+  cur=`<div class="card" style="border-color:var(--r)"><div class="row"><div><b>${esc(t.n)}</b><span class="mu">${rub(t.p)}/мес · ${st(t)}</span></div><span class="tag" ${t.off?'style="background:#555"':''}>${t.off?'Отключён':'Интернет'}</span></div>
+  ${t.gb?`<div class="row" style="margin-top:10px"><b>Осталось ${g.toFixed(1)} ГБ</b><span class="mu">из ${tot} ГБ</span></div><div style="height:10px;background:var(--surface);border:1px solid var(--bd);border-radius:6px;overflow:hidden;margin-top:6px"><div style="height:100%;width:${Math.round(g/tot*100)}%;background:${g<1?'var(--r)':'#1fa84f'}"></div></div>`:'<div style="margin-top:10px"><b>Осталось ∞ ГБ</b></div>'}
+  ${tools('tar')}${t.gb&&!t.off?'<button class="btn sm" style="margin-top:8px" onclick="extraGb()">+5 ГБ · 99 ₽</button>':''}</div>`}
+ return `<div class="card"><div class="row"><span class="mu">Баланс карты</span><b style="color:var(--r)">${rub(S.bal)}</b></div></div>
+ <h2>Моя SIM-карта</h2>${sim}
+ <h2>Тарифы интернета</h2>${cur}
+ ${tariffs.map((x,i)=>`<div class="card"><div class="row"><div><b>${x.n}</b><span class="mu">${x.g} в месяц</span></div><button class="btn sm" onclick="buyTar(${i})">${rub(x.p)}/мес</button></div></div>`).join('')}`;
+}
+let simBusy=false,pmSmNext=0;
+const simNorm=n=>n.replace(/\s/g,'');
+async function claimNum(o,start){
+  let num=start;
+  for(let k=0;k<6;k++){
+    const r=await pmRpc('pm_claim_number',{p_phone:simNorm(num)});
+    if(!r.error)return num;
+    if(!String(r.error.message||'').includes('NUMBER_TAKEN'))throw r.error;
+    if(o.fixed)throw new Error('Этот номер уже занят другим человеком');
+    num=o.mk();
+  }
+  throw new Error('Не удалось подобрать свободный номер');
+}
+async function buySim(i){
+  if(simBusy)return;
+  const o=simOpts[i];
+  if(S.bal<o.p){toast('Не хватает денег — возьмите кредит');return}
+  simBusy=true;
+  try{
+    await pmSyncProfile();
+    const num=await claimNum(o,o.num);
+    if(S.bal<o.p){toast('Не хватает денег');simBusy=false;return}
+    S.bal-=o.p;S.sim={n:o.n,num,p:o.p,till:Date.now()+MO,auto:true,off:false,cl:1};
+    log('📱 SIM '+num);save();render();toast('SIM-карта выдана! '+num);
+  }catch(e){toast(e.message||'Не удалось оформить SIM')}
+  simBusy=false;
+}
+async function pmSimSync(){
+  if(!S||!S.sim||S.sim.cl||!pmClient||Date.now()<pmSmNext)return;
+  try{
+    await pmSyncProfile();
+    const o=simOpts.find(x=>x.n===S.sim.n)||simOpts[0];
+    const num=await claimNum(o,S.sim.num);
+    if(num!==S.sim.num){S.sim.num=num;note('📱 Ваш номер уже занят другим, выдан новый: '+num)}
+    S.sim.cl=1;save();render();
+  }catch(e){pmSmNext=Date.now()+300000}
+}
+function buyTar(i){
+ const t=tariffs[i];
+ if(!S.sim||S.sim.off){toast('Сначала получите SIM-карту');return}
+ if(S.bal<t.p){toast('Не хватает денег — возьмите кредит');return}
+ S.bal-=t.p;S.tar={n:t.n,g:t.g,gb:t.gb,p:t.p,till:Date.now()+MO,auto:true,off:false,extra:0};log('📶 Тариф «'+t.n+'»');
+ save();render();toast('Тариф подключён!');
+}
+function renew(k){
+ const x=S[k];
+ if(S.bal<x.p){toast('Не хватает денег на карте: нужно '+rub(x.p));return}
+ S.bal-=x.p;x.off=false;x.auto=true;x.till=Date.now()+MO;x.extra=0;x.nz=0;log('🔄 Продлено '+rub(x.p));
+ save();render();toast('Продлено');
+}
+function auto(k){const x=S[k];x.auto=!x.auto;save();render();toast(x.auto?'Автопродление включено':'Отключится '+dts(x))}
+function extraGb(){
+ if(S.bal<99){toast('Не хватает денег на карте');return}
+ S.bal-=99;S.tar.extra=(S.tar.extra||0)+5;S.tar.nz=0;log('📶 Докуплено 5 ГБ');
+ save();render();toast('+5 ГБ');
+}
+function mig(){
+ if(!S)return;
+ S.cr.forEach(c=>{if(c.item==='Уран 230'&&!c.days&&!c.paid&&Date.now()<c.till){c.days=14;c.till+=11*864e5;c.n24=false}});
+ S.cr.forEach(c=>{if(!c.uid)c.uid=pmUid()});
+ if(S.sim&&S.sim.p==null){const o=simOpts.find(x=>x.n===S.sim.n);S.sim.p=o?o.p:100;S.sim.till=Date.now()+MO;S.sim.auto=true;S.sim.off=false}
+ if(S.tar&&S.tar.p==null){const t=tariffs.find(x=>x.n===S.tar.n);S.tar.p=t?t.p:199;S.tar.gb=t?t.gb:5;S.tar.auto=true;S.tar.off=false;S.tar.extra=0;S.tar.till=S.tar.till||Date.now()+MO}
+}
+function profile(){
+ const u=S.u,d=document.createElement('div');d.className='sheet';
+ d.onclick=e=>{if(e.target===d)d.remove()};
+ d.innerHTML=`<div><div class="row"><b style="font-size:20px">Профиль</b><button class="btn sm o" id="cl">Закрыть</button></div>
+ <div style="text-align:center;margin-top:12px"><div class="ava" style="width:96px;height:96px;margin:0 auto;font-size:40px">${av()}</div><label class="btn sm o" style="display:inline-block;margin-top:10px">📷 Сменить фото<input type="file" accept="image/*" id="ph" hidden></label></div><div class="card" style="margin-top:12px"><b>${esc(u.fio)}</b><span class="mu" style="display:block">Возраст: ${esc(u.age)}</span><span class="mu" style="display:block">Адрес: ${esc(u.addr)}</span><span class="mu" style="display:block">Страна: ${esc(u.country)}</span><span class="mu" style="display:block">Карта •••• ${esc(u.card)}</span><span class="mu" style="display:block">Код доступа: ${esc(dev())}</span></div>
+ <div class="card"><b>Виртуальная карта PetuhMobile</b><div id="pmvc" style="margin-top:6px"></div></div>
+ <div class="card"><b>📞 Телефон для связи</b><span class="mu" style="display:block;margin:4px 0 8px">Его видит коллектор и может позвонить по долгу. Оставьте пустым, чтобы убрать номер.</span><input class="in" id="pph" type="tel" inputmode="tel" placeholder="+7 ..." value="${esc(u.phone||'')}" style="margin-bottom:8px"><button class="btn sm o" id="pphs">Сохранить телефон</button><div class="mu" id="pphst" style="margin-top:8px"></div></div>
+ <button class="btn o" id="psup" style="margin-bottom:8px">💬 Поддержка</button><button class="btn o" id="lo">Удалить профиль</button></div>`;
+ document.body.appendChild(d);
+ d.querySelector('#cl').onclick=()=>d.remove();
+ d.querySelector('#ph').onchange=function(){pickPhoto(this,d)};
+ d.querySelector('#psup').onclick=()=>supportChat();
+ pmVCLoad(d);
+ pphStat(d);
+ if((S.u.phone||'')!==(S.u.phs||'')){pmPhNext=0;pmPhoneSync().then(()=>pphStat(d))}
+ d.querySelector('#pphs').onclick=async()=>{
+  const v=d.querySelector('#pph').value.trim();
+  if(v&&!/^\+?[0-9 ()-]{5,20}$/.test(v)){toast('Телефон: только цифры, + ( ) и дефис');return}
+  S.u.phone=v;save();pmPhNext=0;await pmPhoneSync();
+  toast(S.u.phs===v?(v?'Телефон сохранён':'Телефон удалён'):'Сохранено на телефоне, но пока не отправлено');pphStat(d);
+ };
+ let sure=false;const lo=d.querySelector('#lo');if(debt()>0)lo.style.opacity='.5';lo.onclick=()=>{if(debt()>0){toast('Сначала погасите долг: '+rub(debt()));return}if(!sure){sure=true;lo.textContent='Нажмите ещё раз — удалить навсегда';lo.style.background='var(--r)';lo.style.color='#fff';return}S=null;DV=null;try{localStorage.removeItem('pm');localStorage.removeItem('pm_ok');localStorage.removeItem('pm_dev');localStorage.removeItem('pm_vcn')}catch(e){}pmVCN=null;pmCollectorSession=false;try{pmRpc('pm_release_number').catch(()=>{}).finally(()=>{try{pmClient.auth.signOut()}catch(e){}})}catch(e){}tab='credit';d.remove();render()};
+}
+
+const pmTO=(p,ms,msg)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg)),ms))]);
+const pmRpc=(n,a)=>pmTO(Promise.resolve(pmClient.rpc(n,a)),20000,'Supabase не отвечает. Проверьте интернет и попробуйте ещё раз');
+let pmAuthP=null;
+function pmEnsureAnonymousAuth(){
+  if(pmAuthP)return pmAuthP;
+  pmAuthP=pmTO((async()=>{
+    if(!pmClient)throw new Error('Не удалось загрузить Supabase SDK');
+    const {data:{session},error}=await pmClient.auth.getSession();
+    if(error)throw error;
+    if(!session){
+      const r=await pmClient.auth.signInAnonymously();
+      if(r.error)throw r.error;
+    }
+  })(),20000,'Не удалось войти в Supabase: нет ответа').finally(()=>{pmAuthP=null});
+  return pmAuthP;
+}
+let pmVCN=null,pmVCNBusy=null,pmVCNErr='';
+try{pmVCN=localStorage.getItem('pm_vcn')||null}catch(e){}
+const pmExtract=d=>{if(d==null)return null;if(typeof d==='string'||typeof d==='number')return String(d);if(Array.isArray(d))return pmExtract(d[0]);return d.virtual_card_number?String(d.virtual_card_number):null};
+const pmName=()=>{const n=String((S&&S.u&&S.u.fio)||'').trim();return n.length<2?(n+'..').slice(0,2):n};
+function pmSyncProfile(){
+  if(!S)return Promise.resolve(null);
+  if(pmVCN)return Promise.resolve(pmVCN);
+  if(pmVCNBusy)return pmVCNBusy;
+  pmVCNBusy=(async()=>{
+    try{
+      await pmEnsureAnonymousAuth();
+      let {data,error}=await pmRpc('pm_register_profile',{p_full_name:pmName()});
+      if(error&&String(error.message||'').includes('NO_APPROVAL')){
+        const c=await pmRpc('pm_claim_approval',{p_device:dev()});
+        if(!c.error)({data,error}=await pmRpc('pm_register_profile',{p_full_name:pmName()}));
+      }
+      if(error)throw error;
+      const n=pmExtract(data);
+      if(!n)throw new Error('Supabase не вернул номер карты');
+      pmVCN=n;pmVCNErr='';
+      try{localStorage.setItem('pm_vcn',n)}catch(e){}
+      return n;
+    }catch(e){
+      pmVCNErr=String((e&&e.message)||'').includes('NO_APPROVAL')?'Нужно разрешение владельца: отправьте ему код доступа из профиля':((e&&e.message)||'Не удалось связаться с Supabase');
+      throw e;
+    }finally{pmVCNBusy=null}
+  })();
+  return pmVCNBusy;
+}
+function pmVCHtml(){
+  if(pmVCN)return `<b style="font-size:20px;letter-spacing:1px;word-break:break-all">${esc(pmVCN)}</b>`;
+  if(pmVCNBusy)return '<span class="mu">Получаем номер…</span>';
+  return `<span style="color:var(--r)">${esc(pmVCNErr||'Номер пока не получен')}</span><button class="btn sm o" id="pmvr" style="margin-top:8px">Повторить</button>`;
+}
+function pmVCLoad(d){
+  const el=d.querySelector('#pmvc');if(!el)return;
+  const show=()=>{if(!el.isConnected)return;el.innerHTML=pmVCHtml();const b=el.querySelector('#pmvr');if(b)b.onclick=go};
+  const go=()=>{pmVCNErr='';pmSyncProfile().then(show).catch(show);show()};
+  if(pmVCN)show();else go();
+}
+let pmLoansSig='',pmLoansT=null,pmLoansNext=0;
+const pmUid=()=>(window.crypto&&crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)}));
+function pmLoansPayload(){
+  return S.cr.filter(c=>c.uid).map(c=>{
+    const amt=Math.min(250000,Math.max(1,Math.round((c.amt||c.back/(1+RATE))*100)/100));
+    const late=!c.paid&&Date.now()>c.till;
+    return {id:c.uid,principal:amt,amount_due:c.paid?0:Math.round(owe(c)*100)/100,issued_at:new Date(c.till-((c.days||DAYS)+(c.ext||0))*864e5).toISOString(),due_at:new Date(c.till).toISOString(),paid_at:c.paid?new Date(c.paidAt||c.till).toISOString():null,status:c.paid?'paid':(late?'overdue':'active')};
+  });
+}
+function pmQueueLoans(){
+  if(!S||!pmClient)return;
+  clearTimeout(pmLoansT);pmLoansT=setTimeout(pmSyncLoans,800);
+}
+async function pmSyncLoans(){
+  if(!S||Date.now()<pmLoansNext)return;
+  const list=pmLoansPayload(),sig=JSON.stringify(list);
+  if(sig===pmLoansSig)return;
+  if(!list.length){pmLoansSig=sig;return}
+  try{
+    await pmSyncProfile();
+    const {error}=await pmRpc('pm_sync_loans',{p_loans:list});
+    if(error)throw error;
+    pmLoansSig=sig;
+  }catch(e){pmLoansNext=Date.now()+300000}
+}
+const TPL=[
+ {n:'Шаурма',e:'🌯',t:60,p:120},{n:'Зарядка для телефона',e:'🔌',t:90,p:170},{n:'Пицца',e:'🍕',t:120,p:220},
+ {n:'12 бутылок воды',e:'💧',t:180,p:330},{n:'Букет цветов',e:'💐',t:240,p:430},{n:'Суши-сет',e:'🍣',t:150,p:280},
+ {n:'Кофе на вынос',e:'☕',t:45,p:100},{n:'Торт',e:'🎂',t:200,p:380},{n:'Корм для петуха',e:'🌽',t:100,p:200},{n:'Бургер',e:'🍔',t:70,p:150}
+];
+const STR=['ул. Петушиная','пр. Кукареку','Гребешковый пер.','бул. Курятник','ул. Зерновая','наб. Жёрдочки'];
+const DAYCAP=15000,CDJOB=120;
+const dayCap=()=>DAYCAP+(S.cr.some(c=>!c.paid&&c.till-Date.now()>0&&c.till-Date.now()<864e5)?5000:0)+(debt()>BIGDEBT?25000:0);
+const fmtT=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+const lvl=()=>Math.min(5,Math.floor((S.dv||0)/10)+1);
+function jd(){const d=new Date().toDateString();if(!S.jd||S.jd.d!==d)S.jd={d,e:0};return S.jd}
+let BOARD=[];
+function newOrder(){
+ const t=TPL[rnd(TPL.length)],f=0.75+Math.random()*0.7,u=Math.random()<0.25;
+ let tm=Math.round(t.t*f),p=Math.round(t.p*f);
+ if(u){tm=Math.max(30,Math.round(tm*0.5));p=Math.round(p*2.5)}
+ return {id:Date.now()+'-'+rnd(1e6),n:t.n+' → '+STR[rnd(STR.length)]+', '+(1+rnd(99)),e:t.e,t:tm,p,u,exp:Date.now()+(u?60+rnd(60):60+rnd(180))*1000};
+}
+const TPLB=[{n:'Перевозка груза',e:'🚚',t:600,p:3000},{n:'Доставка на склад',e:'📦',t:900,p:4800},{n:'Ночной рейс',e:'🌙',t:1200,p:6500}];
+function newContract(){
+ const t=TPLB[rnd(TPLB.length)],f=0.85+Math.random()*0.35;
+ return {id:Date.now()+'-'+rnd(1e6),n:t.n+' → '+STR[rnd(STR.length)]+', '+(1+rnd(99)),e:t.e,t:Math.round(t.t*f),p:Math.round(t.p*f),c:true,exp:Date.now()+(300+rnd(300))*1000};
+}
+let DBOARD=[],dNext=0;
+const TPLD=[{n:'Посылка без адреса',e:'📦',t:180,p:1800},{n:'Чёрный чемодан',e:'🧳',t:240,p:2600},{n:'Проклятый артефакт',e:'🔮',t:300,p:3400},{n:'Ночной рейс',e:'🦇',t:210,p:2200},{n:'Груз для босса',e:'🕶️',t:270,p:3000},{n:'Лёд',e:'🧊',t:150,p:1500}];
+function newDark(big){
+  const id=Date.now()+'-'+rnd(1e6);
+  if(big){const f=0.9+Math.random()*0.3;return {id,n:'Крупная партия',e:'🗿',t:Math.round(900*f),p:Math.round(14000*f),c:true,d:true,risk:0.25,exp:Date.now()+(600+rnd(300))*1000}}
+  const t=TPLD[rnd(TPLD.length)],f=0.85+Math.random()*0.4;
+  return {id,n:t.n,e:t.e,t:Math.round(t.t*f),p:Math.round(t.p*f),d:true,risk:0.2,exp:Date.now()+(180+rnd(180))*1000};
+}
+function ensureDark(){
+  const now=Date.now(),before=DBOARD.map(o=>o.id).join();
+  DBOARD=DBOARD.filter(o=>o.exp>now);
+  if(debt()>BIGDEBT){if(!DBOARD.some(o=>o.c))DBOARD.push(newDark(true))}else DBOARD=DBOARD.filter(o=>!o.c);
+  if(!dNext)dNext=now+10000+rnd(30000);
+  if(now>=dNext){if(DBOARD.filter(o=>!o.c).length<2)DBOARD.push(newDark(false));dNext=now+90000+rnd(150000)}
+  return before!==DBOARD.map(o=>o.id).join();
+}
+function ensureBoard(){
+ const now=Date.now(),before=BOARD.map(o=>o.id).join();
+ BOARD=BOARD.filter(o=>o.exp>now);
+ if(debt()>BIGDEBT){while(BOARD.filter(o=>o.c).length<2)BOARD.push(newContract())}else BOARD=BOARD.filter(o=>!o.c);
+ while(BOARD.filter(o=>!o.c).length<5)BOARD.push(newOrder());
+ return before!==BOARD.map(o=>o.id).join();
+}
+function viewJob(){
+ if(theme==='dark')ensureDark();else ensureBoard();
+ const j=jd(),L=lvl(),m=1+0.05*(L-1),job=S.job,full=j.e>=dayCap(),cd=Math.max(0,Math.ceil(((S.jcd||0)-Date.now())/1000));
+ let act='';
+ if(job){const left=Math.max(0,Math.ceil((job.end-Date.now())/1000));
+  act=`<div class="card" style="border-color:var(--r)"><div class="row"><div style="font-size:34px">${job.e}</div><div style="flex:1;padding-left:8px"><b>${job.u?'🔥 ':''}${esc(job.n)}</b><span class="mu">В пути · оплата ${rub(job.pay)}</span></div><b id="jt" style="color:var(--r);font-size:20px">${left>0?fmtT(left):'Готово'}</b></div>${left>0?'':(job.u?'<div class="mu" style="margin-top:8px">⚡ Успейте отдать: <b id="jw" style="color:var(--r)">'+fmtT(Math.max(0,Math.ceil((job.dl-Date.now())/1000)))+'</b></div>':'')+'<button class="btn" onclick="jobDone()">Отдать заказ и забрать оплату</button>'}</div>`}
+ return `<div class="bank"><small>Курьер PetuhMobile 🛵</small><div class="big">${rub(S.bal)}</div><div class="row"><small>Уровень ${L} · бонус +${Math.round((m-1)*100)}%</small><small>Доставлено: ${S.dv||0}</small></div></div>
+ <div class="card" style="margin-top:12px"><div class="row"><span class="mu">Заработано сегодня</span><b style="color:var(--r)">${rub(j.e)} / ${rub(dayCap())}</b></div></div>
+ ${dayCap()>DAYCAP?'<div class="card" style="border-color:var(--r)"><b>🔥 Последний день кредита</b><span class="mu">Лимит заработка сегодня +5 000 ₽</span></div>':''}
+ <div class="mu" style="margin-bottom:8px">Деньги приходят на карту. Заказы появляются и пропадают сами. Срочные 🔥 платят в 2,5 раза больше, но их надо доставить быстро и отдать за минуту.</div>
+ ${act}${!job&&cd>0?'<div class="card" style="text-align:center"><b>⏳ Ищем новые заказы…</b><b id="jc" style="color:var(--r);font-size:22px">'+fmtT(cd)+'</b></div>':''}${full?'<div class="card" style="text-align:center;border-color:var(--r)"><b>Лимит на сегодня выбран</b><span class="mu">Приходите завтра 🐓</span></div>':''}
+ ${debt()>BIGDEBT&&theme!=='dark'?'<div class="card" style="border-color:var(--r)"><b>💼 Крупные контракты</b><span class="mu">Из-за большого долга открыты контракты с высокой оплатой и повышенный дневной лимит заработка.</span></div>':''}
+ ${theme==='dark'?'<div class="card" style="border-color:var(--r)"><b>🌑 Тёмный курьер</b><span class="mu">Заказы появляются редко и платят больше, но груз могут перехватить, а по дороге может остановить полиция и посадить в тюрьму на час.</span></div>':''}
+ <h2>Заказы</h2>
+ ${(theme==='dark'?DBOARD:BOARD).slice().sort((a,b)=>(b.c?1:0)-(a.c?1:0)).map(o=>`<div class="card" ${o.u||o.c?'style="border-color:var(--r)"':''}><div class="row"><div style="font-size:30px">${o.e}</div><div style="flex:1;padding-left:8px"><b>${o.d?'🌑 ':''}${o.c&&!o.d?'💼 Контракт: ':''}${o.u?'🔥 Срочно: ':''}${esc(o.n)}</b><span class="mu">${fmtT(o.t)} мин · +${rub(Math.round(o.p*m))}${o.u?' · отдать за 1 мин':''}${o.d?' · риск '+Math.round(o.risk*100)+'%':''}</span><span class="mu oe" data-e="${o.exp}"></span></div><button class="btn sm" ${job||full||cd>0?'style="opacity:.4"':''} onclick="takeJob('${o.id}')">Взять</button></div></div>`).join('')}${theme==='dark'&&!DBOARD.length?'<div class="mu" style="text-align:center;margin:10px 0">⏳ Тёмных заказов пока нет. Они появляются редко.</div>':''}`;
+}
+function copCheck(){
+  const j=S.job;
+  if(!j||!j.cop||Date.now()<j.copAt)return false;
+  S.job=null;S.pj=Date.now()+3600e3;S.jcd=Date.now()+CDJOB*1000;
+  log('🚔 Полиция остановила заказ «'+j.n+'»: тюрьма на 1 час');
+  note('🚔 Полиция остановила вас по дороге! Заказ «'+j.n+'» потерян. Тюрьма до '+new Date(S.pj).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}));
+  return true;
+}
+function takeJob(id){
+ if(jailed()){toast('🚔 Вы в тюрьме до '+jtxt());return}
+ if(S.job){toast('Сначала закончите текущий заказ');return}
+ if((S.jcd||0)>Date.now()){toast('Новые заказы появятся через '+fmtT(Math.ceil((S.jcd-Date.now())/1000)));return}
+ if(jd().e>=dayCap()){toast('Лимит заработка на сегодня выбран');return}
+ const o=BOARD.find(x=>x.id===id)||DBOARD.find(x=>x.id===id);
+ if(!o){toast('Этот заказ уже пропал');render();return}
+ const m=1+0.05*(lvl()-1);
+ S.job={n:o.n,e:o.e,pay:Math.round(o.p*m),end:Date.now()+o.t*1000};
+ if(o.u){S.job.u=1;S.job.dl=S.job.end+60000}
+ if(o.d){S.job.d=1;S.job.risk=o.risk;if(Math.random()<(o.c?0.15:0.10)){S.job.cop=1;S.job.copAt=Date.now()+o.t*1000*(0.3+Math.random()*0.5)}}
+ BOARD=BOARD.filter(x=>x.id!==id);DBOARD=DBOARD.filter(x=>x.id!==id);
+ save();render();toast(o.d?'Тёмный заказ принят 🌑':(o.u?'Срочный заказ! Быстрее 🔥':'Заказ принят, в путь! 🛵'));
+}
+function jobDone(){
+ if(copCheck()){save();render();return}
+ const job=S.job;
+ if(!job||Date.now()<job.end)return;
+ if(job.dl&&Date.now()>job.dl){
+  S.job=null;S.jcd=Date.now()+CDJOB*1000;log('❌ Срочный заказ отменён: не успели отдать');
+  save();render();toast('Опоздали: клиент отменил срочный заказ');return;
+ }
+ if(job.d&&Math.random()<job.risk){S.job=null;S.jcd=Date.now()+CDJOB*1000;log('🌑 Груз «'+job.n+'» перехватили: оплаты нет');save();render();toast('🌑 Груз перехватили! Оплаты нет');return}
+ const j=jd(),before=lvl();
+ const pay=Math.max(0,Math.min(job.pay+rnd(4)*10,dayCap()-j.e));
+ S.bal+=pay;j.e+=pay;S.dv=(S.dv||0)+1;S.job=null;S.jcd=Date.now()+CDJOB*1000;
+ log('🛵 '+job.n+': +'+rub(pay));
+ save();render();
+ toast(lvl()>before?'Новый уровень курьера! +5% к оплате':'Получено '+rub(pay));
+}
+setInterval(()=>{
+ if(!S||tab!=='job'||sub!=='courier'||spinning)return;
+ if(copCheck()){save();render();return}
+ if(theme==='dark'?ensureDark():ensureBoard()){render();return}
+ const e=document.getElementById('jt');
+ if(S.job&&e&&e.textContent!=='Готово'){const left=Math.ceil((S.job.end-Date.now())/1000);if(left>0)e.textContent=fmtT(left);else render()}
+ const w=document.getElementById('jw');
+ if(w&&S.job&&S.job.dl){const l=Math.ceil((S.job.dl-Date.now())/1000);if(l>0)w.textContent=fmtT(l);else{if(check())save();render()}}
+ const c=document.getElementById('jc');
+ if(c){const left=Math.ceil(((S.jcd||0)-Date.now())/1000);if(left>0)c.textContent=fmtT(left);else render()}
+ document.querySelectorAll('.oe').forEach(x=>{const l=Math.ceil((+x.dataset.e-Date.now())/1000);x.textContent='исчезнет через '+fmtT(Math.max(0,l))});
+},1000);
+let pmSzNext=0;
+async function pmSeizureSync(){
+  if(!S||!pmClient||Date.now()<pmSzNext)return;
+  try{
+    await pmSyncProfile();
+    S.sz=S.sz||{};S.cl=S.cl||[];
+    let ch=false;
+    const a=await pmRpc('pm_my_seizures');if(a.error)throw a.error;
+    for(const z of (a.data||[])){
+      if(!(z.id in S.sz)){
+        const take=Math.floor(Math.min(Number(z.amount),Math.max(0,S.bal))*100)/100;
+        S.bal-=take;let left=take;
+        S.cr.filter(c=>!c.paid).sort((x,y)=>x.till-y.till).forEach(c=>{
+          if(left<=0)return;
+          const x=Math.min(left,owe(c));c.coll=(c.coll||0)+x;left-=x;
+          if(owe(c)<=0.5){c.paid=true;c.paidAt=Date.now()}
+        });
+        S.sz[z.id]=take;
+        log('🔎 Коллекторы списали '+rub(take));note('🚨 Коллекторы списали '+rub(take)+' с вашей карты');ch=true;save();
+      }
+      const r=await pmRpc('pm_apply_seizure',{p_id:z.id,p_applied:S.sz[z.id]});if(r.error)throw r.error;
+    }
+    const b=await pmRpc('pm_my_collections');if(b.error)throw b.error;
+    for(const k of (b.data||[])){
+      if(!S.cl.includes(k.id)){
+        const m=Number(k.amount);S.bal+=m;S.cl.push(k.id);
+        log('🔎 Выбито с должника: +'+rub(m));note('💰 Вы выбили '+rub(m)+' с должника');ch=true;save();
+      }
+      const r=await pmRpc('pm_ack_collection',{p_id:k.id});if(r.error)throw r.error;
+    }
+    if(ch)render();
+  }catch(e){pmSzNext=Date.now()+300000}
+}
+let pmTrNext=0;
+async function pmTransferSync(){
+  if(!S||!pmClient||Date.now()<pmTrNext)return;
+  try{
+    await pmSyncProfile();
+    S.tr=S.tr||[];
+    const a=await pmRpc('pm_my_incoming');if(a.error)throw a.error;
+    let ch=false;
+    for(const t of (a.data||[])){
+      if(!S.tr.includes(t.id)){
+        const m=Number(t.amount);S.bal+=m;S.tr.push(t.id);S.tr=S.tr.slice(-200);
+        log('📥 Перевод от '+t.from_name+': +'+rub(m));note('📥 '+t.from_name+' перевёл(а) вам '+rub(m));ch=true;save();
+      }
+      const r=await pmRpc('pm_ack_transfer',{p_id:t.id});if(r.error)throw r.error;
+    }
+    if(ch)render();
+  }catch(e){pmTrNext=Date.now()+300000}
+}
+const dk=d=>d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+function bonusInfo(){
+ const b=S.bonus||{last:'',streak:0},t=dk(new Date()),ready=b.last!==t;
+ const streak=ready?(b.last===dk(new Date(Date.now()-864e5))?b.streak+1:1):b.streak;
+ return {ready,streak,amt:Math.min(500,100+50*(Math.min(streak,9)-1)),t};
+}
+function bonusCard(){
+ const i=bonusInfo();
+ return `<div class="card" style="margin-top:12px"><div class="row"><div><b>🎁 Ежедневный бонус</b><span class="mu">Серия: ${i.streak} дн.${i.ready?'':' · следующий завтра'}</span></div>${i.ready?'<button class="btn sm" onclick="claimBonus()">+'+rub(i.amt)+'</button>':'<span class="tag" style="background:#555">Получено</span>'}</div></div><div class="mu" style="margin:-4px 0 4px 4px">🧾 Налоговая проверка ${new Date((Math.floor(Date.now()/(3*864e5))+1)*3*864e5).toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}: спишется 5% с карты</div>`;
+}
+function claimBonus(){
+ const i=bonusInfo();
+ if(!i.ready){toast('Сегодня бонус уже получен');return}
+ S.bonus={last:i.t,streak:i.streak};S.bal+=i.amt;
+ log('🎁 Бонус за вход: +'+rub(i.amt)+' (серия '+i.streak+')');
+ save();render();toast('+'+rub(i.amt)+'! Серия: '+i.streak+' дн.');
+}
+function extend(code){
+ const c=S.cr.find(x=>x.code===code&&!x.paid);
+ if(!c)return;
+ if(Date.now()>c.till){toast('Просроченный кредит продлить нельзя');return}
+ if((c.ext||0)>=2){toast('Кредит можно продлить не больше 2 раз');return}
+ const fee=Math.round(c.back*0.1);
+ if(S.bal<fee){toast('Не хватает денег на комиссию: '+rub(fee));return}
+ S.bal-=fee;c.till+=864e5;c.ext=(c.ext||0)+1;c.n24=false;
+ log('⏳ Кредит продлён на 1 день, комиссия '+rub(fee));
+ save();render();toast('Кредит продлён на 1 день. Комиссия '+rub(fee));
+}
+let pmMgNext=0;
+async function pmMsgSync(){
+  if(!S||!pmClient||Date.now()<pmMgNext)return;
+  try{
+    await pmSyncProfile();
+    S.mg=S.mg||[];
+    const a=await pmRpc('pm_my_messages');if(a.error)throw a.error;
+    let ch=false;
+    for(const m of (a.data||[])){
+      if(!S.mg.includes(m.id)){S.mg.push(m.id);S.mg=S.mg.slice(-200);note('📩 Коллектор: '+m.body);ch=true;save()}
+      const r=await pmRpc('pm_ack_message',{p_id:m.id});if(r.error)throw r.error;
+    }
+    if(ch)render();
+  }catch(e){pmMgNext=Date.now()+300000}
+}
+let sub='courier',spinning=false,pendingR=false,wheelRot=0,cbet=500,lastSpin=null;
+const WHEEL=['❌','🍋','❌','🍒','❌','⭐','❌','🍋','❌','🍀','❌','💎','❌','🍋','❌','🔔','❌','🍒','❌','🍋','❌','❌','❌','❌'];
+const PRIZE={'❌':0,'🍋':0.5,'🍒':1,'🍀':1.5,'🔔':2,'⭐':3,'💎':10};
+const rr=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296};
+function setSub(x){if(spinning)return;sub=x;render()}
+function setBet(b){if(spinning)return;cbet=b;render()}
+function setCustomBet(){if(spinning)return;const el=document.getElementById("customCasinoBet");const b=Number(el&&el.value);if(!Number.isFinite(b)||!Number.isInteger(b)||b<100){toast("Ставка должна быть целым числом от 100 ₽");return}cbet=b;render()}
+function viewWork(){
+ return jailBanner()+`<div class="chips"><button class="chip ${sub==='courier'?'on':''}" onclick="setSub('courier')">🛵 Курьер</button><button class="chip ${sub==='casino'?'on':''}" onclick="setSub('casino')">🎰 Казино</button><button class="chip ${sub==='exchange'?'on':''}" onclick="setSub('exchange')">📈 Биржа</button><button class="chip ${sub==='clicker'?'on':''}" onclick="setSub('clicker')">🐓 Кликер</button></div>`+sfxBtn()+(sub==='casino'?viewCasino():sub==='exchange'?viewExchange():sub==='clicker'?viewClicker():viewJob());
+}
+function wheelHtml(){
+ const bg=WHEEL.map((_,i)=>(i%2?'var(--surface)':'var(--card)')+' '+i*15+'deg '+(i+1)*15+'deg').join(',');
+ return `<div style="position:relative;width:280px;height:280px;margin:22px auto 14px"><div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:26px;z-index:2;color:var(--r)">▼</div><div id="wheel" style="position:relative;width:280px;height:280px;border-radius:50%;border:4px solid var(--r);background:conic-gradient(from 0deg,${bg});transform:rotate(${wheelRot}deg)">${WHEEL.map((e,i)=>`<div style="position:absolute;left:50%;top:50%;font-size:22px;transform:translate(-50%,-50%) rotate(${i*15+7.5}deg) translateY(-108px)">${e}</div>`).join('')}</div></div>`;
+}
+function viewCasino(){
+ const L=lastSpin;
+ return `<div class="bank"><small>Казино PetuhMobile 🎰</small><div class="big">${rub(S.bal)}</div><div class="row"><small>Ставка: ${rub(cbet)}</small><small>💎 = ×10</small></div></div>
+ ${wheelHtml()}
+ ${L?`<div class="card" style="text-align:center"><div style="font-size:34px">${L.sym}</div><b>${L.win>L.bet?'Выигрыш +'+rub(L.win-L.bet):(L.win===L.bet?'Ставка вернулась':(L.win>0?'Вернулось '+rub(L.win)+' из '+rub(L.bet):'Ничего не выпало. Минус '+rub(L.bet)))}</b></div>`:''}
+ <h2>Ставка</h2><div class="chips" style="flex-wrap:wrap">${[100,500,1000,5000,10000,500000,1000000,10000000].map(b=>`<button class="chip ${cbet===b?'on':''}" onclick="setBet(${b})">${b===500000?'500 тыс':b===1000000?'1 млн':b===10000000?'10 млн':b>=1000?b/1000+' тыс':b}</button>`).join('')}</div>
+ <div class="row" style="gap:8px;margin:10px 0"><input id="customCasinoBet" type="number" min="100" step="1" inputmode="numeric" placeholder="Своя ставка от 100 ₽" style="flex:1;min-width:0"/><button class="chip" onclick="setCustomBet()">Установить</button></div>
+ <button class="btn" onclick="spin()">🎰 Крутить за ${rub(cbet)}</button>
+ <h2>Выплаты</h2><div class="card">${Object.keys(PRIZE).map(k=>`<div class="row" style="padding:3px 0"><span style="font-size:20px">${k}</span><b>${PRIZE[k]===0?'0 ₽ (проигрыш)':'×'+String(PRIZE[k]).replace('.',',')}</b></div>`).join('')}</div>
+ <div class="mu" style="text-align:center;margin-top:10px">Игровые деньги, играйте для смеха 🐓</div>`;
+}
+function spin(){
+ if(spinning)return;
+ if(jailed()){toast('🚔 Вы в тюрьме до '+jtxt());return}
+ if(cbet>S.bal){toast('Не хватает денег на ставку');return}
+ const i=Math.floor(rr()*WHEEL.length),sym=WHEEL[i],win=Math.floor(cbet*PRIZE[sym]);
+ S.bal=S.bal-cbet+win;
+ log('🎰 Рулетка '+sym+': ставка '+rub(cbet)+(win>0?', выплата '+rub(win):', проигрыш'));
+ save();spinning=true;
+ const center=i*15+7.5+(rr()*8-4),cur=((wheelRot%360)+360)%360,want=((360-center)%360+360)%360;
+ const dl=((want-cur)+360)%360+360*5;wheelRot+=dl;sfxSpin(dl);
+ const w=document.getElementById('wheel');
+ if(w){w.style.transition='transform 4s cubic-bezier(.12,.6,.1,1)';w.style.transform='rotate('+wheelRot+'deg)'}
+ const bet=cbet;
+ setTimeout(()=>{
+  spinning=false;pendingR=false;lastSpin={sym,win,bet};render();sfxResult(sym,win,bet);
+  toast(sym==='💎'?'💎 ДЖЕКПОТ! +'+rub(win-bet):(win>bet?sym+' Выигрыш +'+rub(win-bet):(win===0?'❌ Ноль. Минус '+rub(bet):sym+' Вернулось '+rub(win))));
+ },4100);
+}
+let pmPhNext=0,pmPhErr='';
+function pphStat(d){
+  const el=d.querySelector('#pphst');if(!el)return;
+  const v=(S.u.phone||'').trim();
+  if(!v){el.textContent='';return}
+  if(v===(S.u.phs||'')){el.textContent='✅ Номер отправлен, коллектор его видит';el.style.color='#1fa84f';return}
+  el.style.color='var(--r)';
+  el.textContent='⏳ Номер пока не отправлен'+(pmPhErr?': '+(/pm_set_phone|function|schema cache/i.test(pmPhErr)?'в Supabase не выполнен файл 9_phone.sql':pmPhErr):'');
+}
+async function pmPhoneSync(){
+  if(!S||!S.u||!pmClient||Date.now()<pmPhNext)return;
+  const v=(S.u.phone||'').trim();
+  if(v===(S.u.phs||''))return;
+  try{await pmSyncProfile();const r=await pmRpc('pm_set_phone',{p_phone:v});if(r.error)throw r.error;S.u.phs=v;pmPhErr='';save()}catch(e){pmPhErr=(e&&e.message)||'нет связи';pmPhNext=Date.now()+300000}
+}
+let pmTopData=null,pmTopAt=0,pmTopBusy=false,pmTopErr='';
+function topHtml(){
+  let b;
+  if(pmTopData&&pmTopData.length)b=pmTopData.map((x,i)=>`<div class="row" style="padding:6px 0;${x.mine?'font-weight:800;color:var(--r)':''}"><span>${['🥇','🥈','🥉'][i]||(i+1)+'.'} ${esc(x.full_name)}${x.overdue?' <span class="tag">просрочка</span>':''}</span><b>${rub(x.total_debt)}</b></div>`).join('');
+  else if(pmTopData)b='<div class="mu">Должников пока нет</div>';
+  else b='<div class="mu">'+(pmTopBusy?'Загружаем…':esc(pmTopErr||'Нет данных'))+'</div>';
+  return `<h2>🏆 Топ должников</h2><div class="card">${b}<button class="btn sm o" style="margin-top:10px" onclick="pmTopLoad(true)">Обновить</button></div>`;
+}
+function pmTopFill(){const el=document.getElementById('pmtop');if(el)el.innerHTML=topHtml()}
+async function pmTopLoad(force){
+  if(pmTopBusy||!pmClient)return;
+  if(!force&&pmTopData&&Date.now()-pmTopAt<60000)return;
+  pmTopBusy=true;pmTopErr='';pmTopFill();
+  try{await pmEnsureAnonymousAuth();const r=await pmRpc('pm_top_debtors');if(r.error)throw r.error;pmTopData=r.data||[];pmTopAt=Date.now()}catch(e){pmTopErr=e.message||'Не удалось загрузить топ'}
+  pmTopBusy=false;pmTopFill();
+}
+let mk='market',pmAuc=null,pmAucAt=0,pmAucBusy=false,pmAucErr='';
+const jailed=()=>Math.max(S.jail||0,S.pj||0)>Date.now();
+const jtxt=()=>new Date(Math.max(S.jail||0,S.pj||0)).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const jailBanner=()=>jailed()?'<div class="card" style="border-color:var(--r);margin-bottom:10px"><b>🚔 Вы в тюрьме</b><span class="mu">Заработок и казино закрыты до '+jtxt()+'</span></div>':'';
+const itemEmoji=n=>(ITEMS.find(x=>x.n===n)||{e:'📦'}).e;
+function setMk(x){mk=x;render()}
+function aucHtml(){
+  let b;
+  if(pmAuc&&pmAuc.length)b=pmAuc.map(x=>`<div class="card"><div class="row"><div style="font-size:30px">${itemEmoji(x.item)}</div><div style="flex:1;padding-left:8px"><b>${esc(x.item)}</b><span class="mu">Продавец: ${esc(x.seller_name)}</span></div><div style="text-align:right"><b style="color:var(--r)">${rub(x.price)}</b><button class="btn sm" style="margin-top:6px" onclick="${x.mine?'aucCancel':'aucBuy'}('${x.id}')">${x.mine?'Снять':'Купить'}</button></div></div></div>`).join('');
+  else if(pmAuc)b='<div class="mu" style="margin:8px 0">Лотов пока нет. Выставьте свою вещь.</div>';
+  else b='<div class="mu" style="margin:8px 0">'+(pmAucBusy?'Загружаем…':esc(pmAucErr||'Нет данных'))+'</div>';
+  return `<div class="row" style="margin-bottom:8px;gap:8px"><span class="mu">Игроки продают вещи. Комиссия 5%</span><span style="display:flex;gap:6px"><button class="btn sm o" onclick="pmAucLoad(true)">Обновить</button><button class="btn sm" onclick="aucList()">+ Выставить</button></span></div>${b}`;
+}
+function aucFill(){const el=document.getElementById('pmauc');if(el)el.innerHTML=aucHtml()}
+async function pmAucLoad(force){
+  if(pmAucBusy||!pmClient)return;
+  if(!force&&pmAuc&&Date.now()-pmAucAt<30000)return;
+  pmAucBusy=true;pmAucErr='';aucFill();
+  try{await pmEnsureAnonymousAuth();const r=await pmRpc('pm_auction_list');if(r.error)throw r.error;pmAuc=r.data||[];pmAucAt=Date.now()}catch(e){pmAucErr=e.message||'Не удалось загрузить аукцион'}
+  pmAucBusy=false;aucFill();
+}
+async function aucBuy(id){
+  piAccrue();
+  const x=(pmAuc||[]).find(v=>v.id===id);
+  if(!x)return;
+  if(S.items.filter(n=>n===x.item).length>=MAXC){toast('У вас уже максимум: '+MAXC+' шт.');return}
+  if(S.bal<x.price){toast('Не хватает денег на карте');return}
+  try{
+    await pmSyncProfile();
+    const r=await pmRpc('pm_auction_buy',{p_id:id});if(r.error)throw r.error;
+    S.bal-=Number(x.price);addItem(x.item,Number(x.price));log('🔨 Аукцион: куплено «'+x.item+'» за '+rub(x.price));
+    save();toast('Куплено: '+x.item);
+  }catch(e){toast(String(e.message||'').includes('AUCTION_GONE')?'Лот уже продан или снят':(e.message||'Не удалось купить'))}
+  await pmAucLoad(true);render();
+}
+async function aucCancel(id){
+  piAccrue();
+  try{
+    const r=await pmRpc('pm_auction_cancel',{p_id:id});if(r.error)throw r.error;
+    const it=r.data&&r.data.item;
+    if(it)S.items.push(it);
+    log('🔨 Аукцион: лот «'+it+'» снят');save();toast('Лот снят, вещь вернулась к вам');
+  }catch(e){toast(String(e.message||'').includes('AUCTION_GONE')?'Лот уже продан или снят':(e.message||'Не удалось снять'))}
+  await pmAucLoad(true);render();
+}
+function aucList(){
+  const cnt={};S.items.forEach(n=>{cnt[n]=(cnt[n]||0)+1});
+  const ok=Object.keys(cnt).filter(n=>cnt[n]-S.cr.filter(c=>!c.paid&&c.item===n).length>0),locked=Object.keys(cnt).filter(n=>!ok.includes(n));
+  if(!ok.length){toast('Нет вещей для продажи. Вещи, взятые в кредит, продавать нельзя, пока кредит не закрыт');return}
+  const d=sheet('<b style="font-size:20px">Выставить вещь на аукцион</b>'+(locked.length?'<div class="mu" style="margin:6px 0">Нельзя продать, пока не закрыт кредит: '+locked.map(esc).join(', ')+'</div>':'')+'<select class="in" id="ai" style="margin-top:12px">'+ok.map(n=>'<option value="'+esc(n)+'">'+esc(itemEmoji(n)+' '+n+(cnt[n]>1?' ×'+cnt[n]:''))+'</option>').join('')+'</select><input class="in" id="ap" type="number" inputmode="numeric" placeholder="Цена, ₽"><button class="btn" id="go">Выставить</button><button class="btn o" id="cl">Закрыть</button>');
+  d.querySelector('#cl').onclick=()=>d.remove();
+  const b=d.querySelector('#go');
+  b.onclick=async()=>{
+    const it=d.querySelector('#ai').value,p=Math.floor(+d.querySelector('#ap').value);
+    if(!(p>0&&p<=1e7)){toast('Введите цену');return}
+    b.disabled=true;b.textContent='Выставляем…';
+    try{
+      await pmSyncProfile();
+      const r=await pmRpc('pm_auction_create',{p_item:it,p_price:p});if(r.error)throw r.error;
+      piAccrue();{const ix=S.items.indexOf(it);if(ix>=0)S.items.splice(ix,1)}log('🔨 Аукцион: выставлено «'+it+'» за '+rub(p));save();d.remove();toast('Лот выставлен');
+      await pmAucLoad(true);render();
+    }catch(e){toast(e.message||'Не удалось выставить');b.disabled=false;b.textContent='Выставить'}
+  };
+}
+let pmSlNext=0;
+async function pmSaleSync(){
+  if(!S||!pmClient||Date.now()<pmSlNext)return;
+  try{
+    await pmSyncProfile();S.sl=S.sl||[];
+    const a=await pmRpc('pm_my_sales');if(a.error)throw a.error;
+    let ch=false;
+    for(const x of (a.data||[])){
+      if(!S.sl.includes(x.id)){
+        const m=Math.floor(Number(x.price)*0.95);S.bal+=m;S.sl.push(x.id);S.sl=S.sl.slice(-200);
+        log('🔨 Продано «'+x.item+'»: +'+rub(m));note('🔨 «'+x.item+'» куплен на аукционе: +'+rub(m)+' (комиссия 5%)');ch=true;save();
+      }
+      const r=await pmRpc('pm_ack_sale',{p_id:x.id});if(r.error)throw r.error;
+    }
+    if(ch)render();
+  }catch(e){pmSlNext=Date.now()+300000}
+}
+let pmAnNext=0;
+async function pmAnnSync(){
+  if(!S||!pmClient||Date.now()<pmAnNext)return;
+  try{
+    await pmEnsureAnonymousAuth();
+    const a=await pmRpc('pm_announcements');if(a.error)throw a.error;
+    const L=a.data||[];
+    if(!S.ann){S.ann=L.map(x=>x.id);save();return}
+    let ch=false;
+    for(const x of L.slice().reverse()){
+      if(!S.ann.includes(x.id)){S.ann.push(x.id);S.ann=S.ann.slice(-50);note('📢 Объявление: '+x.body);ch=true}
+    }
+    if(ch){save();render()}
+  }catch(e){pmAnNext=Date.now()+300000}
+}
+let pmJlNext=0;
+async function pmJailSync(){
+  if(!S||!pmClient||Date.now()<pmJlNext)return;
+  try{
+    await pmSyncProfile();
+    const a=await pmRpc('pm_my_jail');if(a.error)throw a.error;
+    const u=a.data&&a.data.until?Date.parse(a.data.until):0,now=u>Date.now()?u:0;
+    if(now!==(S.jail||0)){
+      const was=jailed();S.jail=now;
+      if(now&&!was)note('🚔 Вас посадили в тюрьму до '+jtxt()+'. Заработок и казино закрыты');
+      else if(!now&&!jailed())note('🔓 Вы на свободе');
+      save();render();
+    }
+  }catch(e){pmJlNext=Date.now()+300000}
+}
+function marketHtml(){return `${piCard()}
+ <div class="mu" style="margin:-4px 0 8px">Маркетплейс PetuhMarket 🛒</div>
+ ${ITEMS.map((it,i)=>`<div class="card"><div class="row"><div style="font-size:34px">${it.e}</div><div style="flex:1;padding-left:6px"><b>${esc(it.n)}</b><span class="mu">PetuhMarket · ${esc(it.s)}</span><span class="mu">💼 +${fp(it.p*PI_Y/24)} в час</span></div><div style="text-align:right"><b style="color:var(--r)">${rub(it.p)}</b>${S.items.some(n=>n===it.n)?'<span class="tag">У вас: '+S.items.filter(n=>n===it.n).length+'</span>':''}${'<div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end"><button class="btn sm o" onclick="buyItem('+i+',&quot;card&quot;)">С карты</button><button class="btn sm" onclick="buyItem('+i+',&quot;credit&quot;)">В кредит</button></div>'}</div></div></div>`).join('')}`}
+let pmEx=null,pmExAt=0,pmExBusy=false,pmExErr='',exBusy=false,exNext=0;
+const fp=n=>Number(n).toLocaleString('ru-RU',{maximumFractionDigits:2})+' ₽';
+const fq=q=>q<1?q.toFixed(4):q.toFixed(3);
+function spark(h){
+  if(!h||h.length<2)return '';
+  const v=h.map(Number),mn=Math.min(...v),mx=Math.max(...v),rg=mx-mn||1;
+  const pts=v.map((y,i)=>(i*100/(v.length-1)).toFixed(1)+','+(28-(y-mn)/rg*26).toFixed(1)).join(' ');
+  return `<svg viewBox="0 0 100 30" width="100%" height="34" preserveAspectRatio="none"><polyline fill="none" stroke="${v[v.length-1]>=v[0]?'#1fa84f':'#d40000'}" stroke-width="2" points="${pts}"/></svg>`;
+}
+function exHtml(){
+  if(!pmEx)return '<div class="mu" style="margin:8px 0">'+(pmExBusy?'Загружаем курсы…':esc(pmExErr||'Нет данных'))+'</div>';
+  const P=S.px||{};
+  return pmEx.map(a=>{
+    const h=(a.hist||[]).map(Number),last=Number(a.price),prev=h.length>1?h[h.length-2]:last,ch=prev?(last-prev)/prev*100:0,pos=P[a.asset],val=pos?pos.q*last:0;
+    return `<div class="card"><div class="row"><div><b>${a.emoji} ${esc(a.name)}</b><span class="mu">${esc(a.asset)}</span></div><div style="text-align:right"><b style="color:var(--r)">${fp(last)}</b><span class="mu" style="color:${ch>=0?'#1fa84f':'#d40000'}">${ch>=0?'▲':'▼'} ${Math.abs(ch).toFixed(1)}%</span></div></div><div style="margin:6px 0">${spark(h)}</div>${pos?`<div class="row"><span class="mu">У вас: ${fq(pos.q)} шт · ${fp(val)}</span><b style="color:${val>=pos.c?'#1fa84f':'#d40000'}">${val>=pos.c?'+':'−'}${fp(Math.abs(val-pos.c))}</b></div>`:''}<div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn sm" onclick="exTrade('${a.asset}','buy',500)">+500</button><button class="btn sm" onclick="exTrade('${a.asset}','buy',2000)">+2 000</button><button class="btn sm" onclick="exTrade('${a.asset}','buy',10000)">+10 000</button><button class="btn sm" onclick="exTrade('${a.asset}','buy',50000)">+50 000</button><button class="btn sm o" ${pos?'':'style="opacity:.4"'} onclick="exTrade('${a.asset}','sell')">Продать всё</button></div></div>`;
+  }).join('');
+}
+function viewExchange(){
+  const P=S.px||{};let pv=0;
+  (pmEx||[]).forEach(a=>{const p=P[a.asset];if(p)pv+=p.q*Number(a.price)});
+  return `<div class="bank"><small>Биржа PetuhMobile 📈</small><div class="big">${rub(S.bal)}</div><div class="row"><small>Портфель: ${rub(pv)}</small><small>Комиссия 1%</small></div></div><div class="mu" style="margin:10px 0">Курсы обновляются раз в 3 минуты и одинаковы у всех игроков. Покупайте дёшево, продавайте дорого.</div><div class="mu" id="pmexc" style="margin-bottom:8px;font-weight:700"></div>${newsHtml()}<div id="pmex">${exHtml()}</div>`;
+}
+async function pmExLoad(force){
+  if(pmExBusy||!pmClient)return;
+  if(!force&&Date.now()-pmExAt<20000)return;
+  pmExBusy=true;pmExErr='';
+  try{await pmEnsureAnonymousAuth();const r=await pmRpc('pm_exchange_state');if(r.error)throw r.error;pmEx=r.data||[];try{const nr=await pmRpc('pm_news_list');if(!nr.error)pmNews=nr.data||[]}catch(e){}const t=Math.max(0,...pmEx.map(a=>Date.parse(a.updated_at)||0));exNext=t?t+180000:0}catch(e){pmExErr=e.message||'Биржа недоступна'}
+  pmExBusy=false;pmExAt=Date.now();
+  if(tab==='job'&&sub==='exchange')render();
+}
+setInterval(()=>{
+  if(!S||tab!=='job'||sub!=='exchange')return;
+  const e=document.getElementById('pmexc');if(!e||!exNext)return;
+  const left=Math.ceil((exNext-Date.now())/1000);
+  if(left>0)e.textContent='⏱ Следующее обновление курса через '+fmtT(left);
+  else{e.textContent='⏱ Обновляем курс…';if(!pmExBusy&&Date.now()-pmExAt>15000)pmExLoad(true)}
+},1000);
+async function exTrade(a,kind,amt){
+  if(exBusy)return;
+  exBusy=true;
+  try{
+    await pmExLoad(true);
+    const x=(pmEx||[]).find(v=>v.asset===a);
+    if(!x)throw new Error(pmExErr||'Нет курса, попробуйте ещё раз');
+    const pr=Number(x.price);S.px=S.px||{};
+    if(kind==='buy'){
+      if(S.bal<amt){toast('Не хватает денег на карте');return}
+      const q=amt*0.99/pr,p=S.px[a]||{q:0,c:0};
+      S.bal-=amt;S.px[a]={q:p.q+q,c:p.c+amt};
+      log('📈 Куплено '+a+' на '+rub(amt)+' по '+fp(pr));toast('Куплено '+fq(q)+' '+a+' по '+fp(pr));
+    }else{
+      const p=S.px[a];
+      if(!p||!p.q){toast('У вас нет '+a);return}
+      const get=Math.floor(p.q*pr*0.99),d=get-p.c;
+      S.bal+=get;delete S.px[a];
+      log('📉 Продано '+a+': '+rub(get)+' ('+(d>=0?'+':'−')+rub(Math.abs(d))+')');toast('Продано за '+rub(get)+' ('+(d>=0?'+':'−')+rub(Math.abs(d))+')');
+    }
+    save();render();
+  }catch(e){toast(e.message||'Биржа недоступна')}
+  finally{exBusy=false}
+}
+const fmtLeft=ms=>{if(ms<=0)return 'Просрочен';const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4);return (d?d+' д ':'')+(d||h?h+' ч ':'')+m+' мин'};
+setInterval(()=>{document.querySelectorAll('.lt').forEach(e=>{e.textContent=fmtLeft(+e.dataset.t-Date.now())})},10000);
+const CK_EN=50,CK_DAY=2000,CK_MS=4000;
+let ckT=null;
+function ck(){
+ const d=new Date().toDateString();
+ if(!S.ck||S.ck.d!==d)S.ck={d,n:0,lvl:S.ck?S.ck.lvl:1,en:S.ck?S.ck.en:CK_EN,ts:Date.now()};
+ // Коллекция секретных яиц хранится отдельно от дневного лимита тапов.
+ S.ckEggs=S.ckEggs||{uranium:0,ice:0};
+ return S.ck;
+}
+function ckEnergy(c){
+ const g=Math.floor((Date.now()-c.ts)/CK_MS);
+ if(g>0){c.en=Math.min(CK_EN,c.en+g);c.ts=c.en>=CK_EN?Date.now():c.ts+g*CK_MS}
+ return c.en;
+}
+const ckCost=l=>500*Math.pow(2,l-1);
+function ckUpdate(){
+ if(!S||tab!=='job'||sub!=='clicker')return;
+ const c=ck(),en=ckEnergy(c),set=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t};
+ set('ckbal',rub(S.bal));set('cken',en+'/'+CK_EN);set('ckn',c.n+' / '+CK_DAY);
+ const b=document.getElementById('ckbar');if(b)b.style.width=(en/CK_EN*100)+'%';
+}
+function viewClicker(){
+ const c=ck(),en=ckEnergy(c),lv=c.lvl;
+ return `<div class="bank"><small>Петух-кликер 🐓</small><div class="big" id="ckbal">${rub(S.bal)}</div><div class="row"><small>За тап: +${rub(lv)}</small><small>Гребешок: ${lv}/8</small></div></div>
+ <div style="text-align:center;margin:18px 0 8px"><button id="ckbtn" onclick="tapRooster(event)" style="font-size:110px;background:none;border:0;line-height:1;transition:transform .06s;touch-action:manipulation;-webkit-user-select:none;user-select:none">🐓</button></div>
+ <div class="card"><div class="row"><span class="mu">⚡ Энергия</span><b id="cken">${en}/${CK_EN}</b></div><div style="height:10px;background:var(--surface);border:1px solid var(--bd);border-radius:6px;overflow:hidden;margin-top:6px"><div id="ckbar" style="height:100%;width:${en/CK_EN*100}%;background:var(--r)"></div></div><div class="row" style="margin-top:10px"><span class="mu">Тапов сегодня</span><b id="ckn">${c.n} / ${CK_DAY}</b></div></div>
+ ${lv<8?`<button class="btn" onclick="ckUp()">⬆️ Улучшить гребешок · ${rub(ckCost(lv))}</button>`:'<div class="card" style="text-align:center"><b>Максимальный уровень 🏆</b></div>'}
+ <div class="mu" style="margin-top:10px;text-align:center">Энергия восстанавливается сама: 1 за 4 секунды. Лимит тапов обновляется каждый день. Иногда выпадает золотое яйцо 🥚</div>`;
+}
+function tapRooster(ev){
+ if(jailed()){toast('🚔 Вы в тюрьме до '+jtxt());return}
+ const c=ck(),en=ckEnergy(c);
+ if(c.n>=CK_DAY){toast('Лимит тапов на сегодня выбран. Приходите завтра 🐓');return}
+ if(en<1){toast('Петух устал. Энергия восстанавливается');return}
+ if(en>=CK_EN)c.ts=Date.now();
+ c.en=en-1;c.n++;sfx.tap();
+ let rw=c.lvl;
+ if(Math.random()<0.02){rw+=c.lvl*25;sfx.egg();toast('🥚 Золотое яйцо! +'+rub(c.lvl*25))}
+ // Секретные яйца сразу превращаются в денежную награду.
+ const secretRoll=rr();
+ if(secretRoll<1/100000){
+  const bonus=c.lvl*10000;rw+=bonus;
+  log('☢️ Урановое яйцо! Денежная награда +'+rub(bonus));
+  sfx.jack();toast('☢️ УРАНОВОЕ ЯЙЦО! +'+rub(bonus));
+ }else if(secretRoll<1/100000+1/50000){
+  const bonus=c.lvl*5000;rw+=bonus;
+  log('🧊 Ледовое яйцо! Денежная награда +'+rub(bonus));
+  sfx.jack();toast('🧊 ЛЕДОВОЕ ЯЙЦО! +'+rub(bonus));
+ }
+ S.bal+=rw;
+ ckUpdate();
+ const b=document.getElementById('ckbtn');
+ if(b){b.style.transform='scale(.9)';setTimeout(()=>{b.style.transform=''},60)}
+ if(ev&&ev.clientX!=null){
+  const f=document.createElement('div');
+  f.textContent='+'+rw;
+  f.style.cssText='position:fixed;left:'+(ev.clientX-10)+'px;top:'+(ev.clientY-30)+'px;color:var(--r);font-weight:900;font-size:22px;pointer-events:none;transition:all .6s;opacity:1;z-index:15';
+  document.body.appendChild(f);
+  requestAnimationFrame(()=>{f.style.top=(ev.clientY-90)+'px';f.style.opacity='0'});
+  setTimeout(()=>f.remove(),650);
+ }
+ clearTimeout(ckT);ckT=setTimeout(save,800);
+}
+function ckUp(){
+ const c=ck(),cost=ckCost(c.lvl);
+ if(c.lvl>=8)return;
+ if(S.bal<cost){toast('Не хватает денег: нужно '+rub(cost));return}
+ S.bal-=cost;c.lvl++;log('⬆️ Гребешок петуха: уровень '+c.lvl);
+ sfx.win();save();render();toast('Уровень гребешка: '+c.lvl+'. Теперь +'+rub(c.lvl)+' за тап');
+}
+setInterval(ckUpdate,1000);
+addEventListener('pagehide',()=>{if(S)save()});
+let sfxOn=true,AC=null;
+try{sfxOn=localStorage.getItem('pm_sfx')!=='0'}catch(e){}
+function ac(){
+  if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}
+  if(AC.state==='suspended')AC.resume();
+  return AC;
+}
+function tone(f,d,type,vol,t0,f2){
+  const a=ac();if(!a||!sfxOn)return;
+  const t=a.currentTime+(t0||0),o=a.createOscillator(),g=a.createGain();
+  o.type=type||'sine';o.frequency.setValueAtTime(f,t);
+  if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
+  g.gain.setValueAtTime(vol||0.15,t);g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+  o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+d+0.02);
+}
+const sfx={
+  tap(){const f=600+Math.random()*200;tone(f,0.08,'square',0.07,0,f*0.4);tone(f*0.6,0.06,'triangle',0.08,0.07,f*0.3)},
+  egg(){[784,988,1318].forEach((f,i)=>tone(f,0.25,'sine',0.14,i*0.09))},
+  win(){[523,659,784,1047].forEach((f,i)=>tone(f,0.22,'triangle',0.15,i*0.1))},
+  jack(){[523,659,784,1047,1319,1568].forEach((f,i)=>tone(f,0.3,'triangle',0.16,i*0.08))},
+  lose(){tone(300,0.4,'sawtooth',0.09,0,110)},
+  tick(){tone(850,0.025,'square',0.05)}
+};
+function sfxSpin(delta){
+  const a=ac();if(!a||!sfxOn)return;
+  const n=Math.floor(delta/15);
+  for(let k=1;k<n;k++){
+    const x=1-Math.pow(1-k*15/delta,1/3.2);
+    tone(800+Math.random()*100,0.02,'square',0.05,x*4);
+  }
+}
+function sfxResult(sym,win,bet){
+  if(sym==='💎')sfx.jack();else if(win>bet)sfx.win();else if(win===0)sfx.lose();else sfx.tick();
+}
+const sfxBtn=()=>(sub==='casino'||sub==='clicker')?'<button onclick="sfxToggle()" aria-label="Звук" style="position:fixed;right:14px;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;background:var(--surface);border:2px solid var(--r);font-size:20px;padding:0;z-index:4;box-shadow:0 2px 8px rgba(0,0,0,.18)">'+(sfxOn?'🔊':'🔇')+'</button>':'';
+function sfxToggle(){
+  sfxOn=!sfxOn;
+  try{localStorage.setItem('pm_sfx',sfxOn?'1':'0')}catch(e){}
+  if(sfxOn){ac();sfx.win()}
+  render();
+}
+const PI_Y=0.01,PI_MAX=3000;
+const piBasis=n=>{const b=(S.ic||{})[n];if(b!=null)return b;const it=ITEMS.find(x=>x.n===n);return it?it.p:0};
+const piRate=()=>Math.min(PI_MAX/24,S.items.reduce((t,n)=>t+(S.cr.some(c=>!c.paid&&c.item===n)?0:piBasis(n)*PI_Y/24),0));
+function piPending(){
+  const pi=S.pi||(S.pi={p:0,t:Date.now()}),r=piRate();
+  return Math.min(r*24,pi.p+r*(Date.now()-pi.t)/36e5);
+}
+function piAccrue(){const v=piPending();S.pi={p:v,t:Date.now()};return v}
+function piClaim(){
+  const amt=Math.floor(piAccrue());
+  if(amt<1){toast('Пока нечего забирать');return}
+  S.bal+=amt;S.pi.p-=amt;log('💼 Доход от вещей: +'+rub(amt));
+  sfx.win();save();render();toast('Получено '+rub(amt));
+}
+function piCard(){
+  const r=piRate();
+  if(!S.items.some(n=>ITEMS.some(x=>x.n===n)))return '<div class="mu" style="margin:8px 0">💼 Вещи приносят доход каждый час: за сутки это 1% от цены покупки. За вещи в кредите доход не начисляется.</div>';
+  return `<div class="card" style="border-color:var(--r)"><div class="row"><div><b>💼 Доход от вещей</b><span class="mu">+${fp(r)} в час · максимум 3 000 ₽ в день</span><span class="mu">Копится до 24 часов</span></div><div style="text-align:right"><b id="pia" style="color:var(--r)">${fp(piPending())}</b><button class="btn sm" style="margin-top:6px" onclick="piClaim()">Забрать</button></div></div></div><div class="mu" style="margin:4px 4px 10px">Доход идёт каждый час: за сутки это 1% от цены покупки. За вещи в кредите доход не начисляется.</div>`;
+}
+setInterval(()=>{const e=document.getElementById('pia');if(e&&S)e.textContent=fp(piPending())},5000);
+let pmBnNext=0;
+function viewBan(){
+  $('#app').innerHTML=`<div class="hero"><div class="e">🚫</div><div class="logo" style="font-size:26px">Аккаунт заблокирован</div></div><div class="card" style="text-align:center">${esc((S.ban&&S.ban.reason)||'Причина не указана')}</div><div class="mu" style="text-align:center;margin:12px 0">Обратитесь к владельцу, чтобы аккаунт разблокировали.</div><button class="btn" onclick="banRecheck()">Проверить снова</button><h2>⚖️ Суд</h2><div id="banap"><div class="mu">Загружаем…</div></div>`;banApLoad();
+}
+async function banRecheck(){pmBnNext=0;await pmBanSync();if(S.ban){toast('Аккаунт всё ещё заблокирован');banApLoad()}}
+async function pmBanSync(){
+  if(!S||!pmClient||Date.now()<pmBnNext)return;
+  try{
+    await pmEnsureAnonymousAuth();
+    const r=await pmRpc('pm_my_ban');if(r.error)throw r.error;
+    const b=r.data&&r.data.banned?{reason:r.data.reason||''}:null;
+    if(!!b!==!!S.ban){
+      if(b){S.ban=b;note('🚫 Ваш аккаунт заблокирован')}else{delete S.ban;note('✅ Аккаунт разблокирован')}
+      save();render();
+    }else if(b&&S.ban.reason!==b.reason){S.ban=b;save()}
+  }catch(e){pmBnNext=Date.now()+300000}
+}
+let pmRsNext=0;
+async function pmResetSync(){
+  if(!S||!pmClient||Date.now()<pmRsNext)return;
+  try{
+    await pmEnsureAnonymousAuth();
+    const r=await pmRpc('pm_my_reset');if(r.error)throw r.error;
+    const id=r.data&&r.data.id;
+    if(id){
+      if(S.rs!==id){
+        S.bal=0;S.items=[];S.ic={};S.px={};S.pi={p:0,t:Date.now()};S.pets=[];S.pp={p:0,t:Date.now()};S.rs=id;
+        log('🧹 Владелец обнулил ваши деньги и вещи');note('🧹 Ваши деньги и вещи обнулены владельцем');save();render();
+      }
+      const a=await pmRpc('pm_ack_reset',{p_id:id});if(a.error)throw a.error;
+    }
+  }catch(e){pmRsNext=Date.now()+300000}
+}
+let theme='light';
+try{theme=localStorage.getItem('pm_theme')==='dark'?'dark':'light'}catch(e){}
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme',theme);
+  let m=document.querySelector('meta[name="theme-color"]');
+  if(!m){m=document.createElement('meta');m.name='theme-color';document.head.appendChild(m)}
+  m.content=theme==='dark'?'#121214':'#ffffff';
+}
+function toggleTheme(){
+  theme=theme==='dark'?'light':'dark';
+  try{localStorage.setItem('pm_theme',theme)}catch(e){}
+  applyTheme();render();
+}
+applyTheme();
+let pmVid={light:null,dark:null},pmVidAt={light:0,dark:0},pmVidBusy=false,pmVidErr='';
+function feedHtml(){
+  const k=theme==='dark'?'dark':'light',L=pmVid[k];
+  if(!L)return '<div class="mu" style="margin:10px 0">'+(pmVidBusy?'Загружаем…':esc(pmVidErr||'Нет данных'))+'</div>';
+  if(!L.length)return '<div class="mu" style="margin:10px 0;text-align:center">Пока видео нет</div>';
+  return L.map(v=>`<div class="card" style="padding:10px"><div style="position:relative;background:#000;border-radius:12px;overflow:hidden;min-height:180px"><video data-src="${esc(v.url)}" playsinline muted loop controls preload="none" style="width:100%;max-height:68vh;display:block"></video><div class="vst" onclick="vidTap(this)" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;color:#fff;font-size:15px;cursor:pointer;background:rgba(0,0,0,.25)">▶ Нажмите, чтобы загрузить</div></div><div class="row" style="margin-top:8px;gap:8px"><b style="flex:1">${esc(v.title)}</b>${pmCollectorSession?'<button class="btn sm o" onclick="feedDel(\''+esc(v.id)+'\',this)">🗑 Удалить</button>':''}</div><a href="${esc(v.url)}" target="_blank" rel="noopener" class="mu" style="display:inline-block;margin-top:4px">Открыть отдельно</a></div>`).join('');
+}
+function vidTap(el){
+  const v=el.parentNode.querySelector('video');
+  if(!v.src){v.src=v.dataset.src}
+  v.load();const p=v.play();if(p&&p.catch)p.catch(()=>{});
+}
+let delArm=null;
+async function feedDel(id,btn){
+  if(delArm!==id){delArm=id;btn.textContent='Точно удалить?';setTimeout(()=>{if(delArm===id){delArm=null;btn.textContent='🗑 Удалить'}},4000);return}
+  delArm=null;btn.disabled=true;
+  try{
+    const x=await pmRpc('pm_collector_video_delete',{p_id:id});if(x.error)throw x.error;
+    const u=x.data&&x.data.url,m=u&&u.split('/storage/v1/object/public/videos/')[1];
+    if(m){try{await pmClient.storage.from('videos').remove([decodeURIComponent(m)])}catch(e){}}
+    pmVid.light=null;pmVid.dark=null;toast('Видео удалено');pmVidLoad(true);
+  }catch(e){
+    const msg=String(e.message||'');
+    toast(msg.includes('доступа коллектора')?'Сеанс коллектора закончился. Войдите в режим коллектора заново':(msg||'Не удалось удалить'));
+    btn.disabled=false;btn.textContent='🗑 Удалить';
+  }
+}
+function viewFeed(){
+  const dark=theme==='dark';
+  if(dark&&!S.darkOk)return `<div class="hero"><div class="e">🌑</div><div class="logo" style="font-size:24px">Тёмная сторона</div></div><div class="card" style="text-align:center">Здесь жёсткий юмор и странные видео. Открывайте, только если готовы.</div><button class="btn" onclick="darkOpen()">Открыть тёмную ленту</button><div class="mu" style="text-align:center;margin-top:10px">Вернуться к светлой ленте можно кнопкой ☀️ вверху.</div>`;
+  return `<div style="text-align:center;margin:4px 0 10px"><b style="font-size:20px">${dark?'🌑 Тёмная сторона':'🌞 Светлая лента'}</b></div>${pmCollectorSession?'<div style="text-align:center;margin-bottom:10px"><button class="btn sm o" onclick="vidAdmin()">🛠 Управление лентой</button></div>':''}<div id="pmfeed">${feedHtml()}</div>`;
+}
+function darkOpen(){S.darkOk=1;save();render()}
+function feedObserve(){
+  if(window.__fo){try{window.__fo.disconnect()}catch(e){}}
+  const vs=document.querySelectorAll('#pmfeed video');
+  vs.forEach(v=>{
+    const st=v.parentNode.querySelector('.vst');
+    const say=t=>{if(st){st.style.display=t?'flex':'none';st.textContent=t||''}};
+    v.addEventListener('loadstart',()=>say('Загружаем…'));
+    v.addEventListener('waiting',()=>say('Загружаем…'));
+    v.addEventListener('playing',()=>say(''));
+    v.addEventListener('loadeddata',()=>say(''));
+    v.addEventListener('error',()=>say('Не удалось загрузить видео. Нажмите, чтобы повторить, или откройте отдельно ниже'));
+  });
+  if(!vs.length||!('IntersectionObserver' in window))return;
+  window.__fo=new IntersectionObserver(es=>es.forEach(e=>{
+    const v=e.target;
+    if(e.isIntersecting&&e.intersectionRatio>0.6){
+      if(!v.src){
+        v.src=v.dataset.src;v.load();clearTimeout(v._t);
+        v._t=setTimeout(()=>{if(v.readyState<2){const st=v.parentNode.querySelector('.vst');if(st){st.style.display='flex';st.textContent='Долго грузится. Нажмите, чтобы повторить, или откройте отдельно ниже'}}},15000);
+      }
+      const p=v.play();if(p&&p.catch)p.catch(()=>{});
+    }else v.pause();
+  }),{threshold:[0,0.6,1]});
+  vs.forEach(v=>window.__fo.observe(v));
+}
+async function pmVidLoad(force){
+  const k=theme==='dark'?'dark':'light';
+  if(pmVidBusy||!pmClient)return;
+  if(!force&&pmVid[k]&&Date.now()-pmVidAt[k]<30000)return;
+  pmVidBusy=true;pmVidErr='';
+  const el=document.getElementById('pmfeed');if(el)el.innerHTML=feedHtml();
+  try{await pmEnsureAnonymousAuth();const r=await pmRpc('pm_videos_list',{p_theme:k});if(r.error)throw r.error;pmVid[k]=r.data||[];pmVidAt[k]=Date.now()}catch(e){pmVidErr=e.message||'Не удалось загрузить ленту'}
+  pmVidBusy=false;
+  const el2=document.getElementById('pmfeed');if(el2){el2.innerHTML=feedHtml();feedObserve()}
+}
+function vidAdmin(){
+  let th=theme==='dark'?'dark':'light';
+  const d=sheet('<b style="font-size:20px">Управление лентой</b><div class="chips" style="margin-top:12px"><button class="chip" id="vt-light">🌞 Светлая</button><button class="chip" id="vt-dark">🌑 Тёмная</button></div><input class="in" id="vtitle" maxlength="100" placeholder="Название видео"><input class="in" id="vfile" type="file" accept="video/*"><button class="btn" id="vup">Загрузить видео</button><button class="btn o" id="vcan" style="display:none">Отменить загрузку</button><input class="in" id="vurl" placeholder="или ссылка на видео (https://…)" style="margin-top:12px"><button class="btn o" id="vlink">Добавить по ссылке</button><div id="vlist" style="margin-top:12px"></div><button class="btn o" id="vcl">Закрыть</button>');
+  const q=s=>d.querySelector(s);
+  const paint=()=>{q('#vt-light').className='chip'+(th==='light'?' on':'');q('#vt-dark').className='chip'+(th==='dark'?' on':'')};
+  const list=async()=>{
+    const box=q('#vlist');box.innerHTML='<div class="mu">Загружаем список…</div>';
+    try{
+      const r=await pmRpc('pm_videos_list',{p_theme:th});if(r.error)throw r.error;
+      const L=r.data||[];
+      box.innerHTML=L.length?L.map(v=>'<div class="card"><div class="row"><div style="flex:1;padding-right:8px"><b>'+esc(v.title)+'</b></div><button class="btn sm o" data-id="'+esc(v.id)+'">🗑 Удалить</button></div></div>').join(''):'<div class="mu">В этой ленте пока пусто</div>';
+      box.querySelectorAll('[data-id]').forEach(b=>{let on=false;b.onclick=async()=>{
+        if(!on){on=true;b.textContent='Точно удалить?';setTimeout(()=>{on=false;b.textContent='🗑 Удалить'},3500);return}
+        try{
+          const x=await pmRpc('pm_collector_video_delete',{p_id:b.dataset.id});if(x.error)throw x.error;
+          const u=x.data&&x.data.url,m=u&&u.split('/storage/v1/object/public/videos/')[1];
+          if(m){try{await pmClient.storage.from('videos').remove([decodeURIComponent(m)])}catch(e){}}
+          pmVid[th]=null;toast('Видео удалено');list();
+        }catch(e){toast(e.message||'Не удалось удалить')}
+      }});
+    }catch(e){box.innerHTML='<div class="mu" style="color:var(--r)">'+esc(e.message||'Не удалось загрузить список')+'</div>'}
+  };
+  q('#vt-light').onclick=()=>{th='light';paint();list()};
+  q('#vt-dark').onclick=()=>{th='dark';paint();list()};
+  q('#vcl').onclick=()=>d.remove();
+  let xhr=null;
+  q('#vcan').onclick=()=>{if(xhr)xhr.abort()};
+  q('#vup').onclick=async()=>{
+    const f=q('#vfile').files[0],t=q('#vtitle').value.trim(),b=q('#vup'),c=q('#vcan');
+    if(!t){toast('Введите название');return}
+    if(!f){toast('Выберите видео');return}
+    if(f.size>50*1024*1024){toast('Файл '+Math.round(f.size/1048576)+' МБ, а можно до 50 МБ. Обрежьте или сожмите видео');return}
+    b.disabled=true;c.style.display='block';b.textContent='Подготовка…';
+    try{
+      await pmEnsureAnonymousAuth();
+      const {data:{session}}=await pmClient.auth.getSession();
+      if(!session)throw new Error('Нет сессии Supabase');
+      const ext=((f.name.split('.').pop()||'mp4').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5))||'mp4',path=th+'/'+pmUid()+'.'+ext;
+      await new Promise((res,rej)=>{
+        xhr=new XMLHttpRequest();
+        xhr.open('POST',PM_SUPABASE_URL+'/storage/v1/object/videos/'+path);
+        xhr.setRequestHeader('Authorization','Bearer '+session.access_token);
+        xhr.setRequestHeader('apikey',PM_SUPABASE_KEY);
+        xhr.setRequestHeader('Content-Type',f.type||'video/mp4');
+        xhr.setRequestHeader('x-upsert','false');
+        xhr.timeout=600000;
+        xhr.upload.onprogress=e=>{if(e.lengthComputable)b.textContent='Загрузка '+Math.round(e.loaded/e.total*100)+'%'};
+        xhr.onload=()=>xhr.status<300?res():rej(new Error('Ошибка '+xhr.status+': '+String(xhr.responseText).slice(0,120)));
+        xhr.onerror=()=>rej(new Error('Нет связи'));
+        xhr.ontimeout=()=>rej(new Error('Загрузка слишком долгая'));
+        xhr.onabort=()=>rej(new Error('Загрузка отменена'));
+        xhr.send(f);
+      });
+      const url=PM_SUPABASE_URL+'/storage/v1/object/public/videos/'+path;
+      const r=await pmRpc('pm_collector_video_add',{p_title:t,p_url:url,p_theme:th});if(r.error)throw r.error;
+      q('#vtitle').value='';q('#vfile').value='';pmVid[th]=null;toast('Видео добавлено');list();
+    }catch(e){toast(e.message||'Не удалось загрузить')}
+    xhr=null;c.style.display='none';b.disabled=false;b.textContent='Загрузить видео';
+  };
+  q('#vlink').onclick=async()=>{
+    const u=q('#vurl').value.trim(),t=q('#vtitle').value.trim(),b=q('#vlink');
+    if(!t){toast('Введите название');return}
+    if(!/^https:\/\//.test(u)){toast('Ссылка должна начинаться с https://');return}
+    b.disabled=true;
+    try{const r=await pmRpc('pm_collector_video_add',{p_title:t,p_url:u,p_theme:th});if(r.error)throw r.error;q('#vurl').value='';q('#vtitle').value='';pmVid[th]=null;toast('Видео добавлено');list()}catch(e){toast(e.message||'Не удалось добавить')}
+    b.disabled=false;
+  };
+  paint();list();
+}
+let apBody='';
+async function banApLoad(){
+  const el=document.getElementById('banap');if(!el)return;
+  try{
+    await pmEnsureAnonymousAuth();
+    const r=await pmRpc('pm_my_appeal');if(r.error)throw r.error;
+    const a=r.data||{};
+    let h='';
+    if(a.status==='open')h='<div class="card" style="text-align:center">⏳ Ваша апелляция рассматривается судьёй</div>';
+    else{
+      if(a.status==='denied')h+='<div class="card" style="border-color:var(--r)"><b>❌ Апелляция отклонена</b><span class="mu">'+esc(a.note||'Без пояснений')+'</span></div>';
+      h+='<textarea class="in" id="apt" maxlength="500" rows="4" placeholder="Расскажите суду, почему вас нужно разблокировать">'+esc(apBody)+'</textarea><button class="btn" id="apb">Подать апелляцию</button>';
+    }
+    el.innerHTML=h;
+    const b=document.getElementById('apb');
+    if(b)b.onclick=async()=>{
+      const t=document.getElementById('apt').value.trim();apBody=t;
+      if(t.length<5){toast('Напишите хотя бы пару слов');return}
+      b.disabled=true;b.textContent='Отправляем…';
+      try{const x=await pmRpc('pm_submit_appeal',{p_body:t});if(x.error)throw x.error;apBody='';toast('Апелляция подана');banApLoad()}
+      catch(e){toast(e.message||'Не удалось подать');b.disabled=false;b.textContent='Подать апелляцию'}
+    };
+  }catch(e){el.innerHTML='<div class="mu">'+esc(e.message||'Суд недоступен')+'</div>'}
+}
+function courtAdmin(){
+  const d=sheet('<b style="font-size:20px">⚖️ Суд</b><div id="cbox" style="margin-top:12px"></div><button class="btn o" id="ccl">Закрыть</button>');
+  d.querySelector('#ccl').onclick=()=>d.remove();
+  const box=d.querySelector('#cbox');
+  const load=async()=>{
+    box.innerHTML='<div class="mu">Загружаем…</div>';
+    try{
+      const r=await pmRpc('pm_collector_appeals');if(r.error)throw r.error;
+      const L=r.data||[];
+      box.innerHTML=L.length?L.map(a=>'<div class="card" data-id="'+esc(a.id)+'"><b>'+esc(a.full_name)+'</b><span class="mu">'+esc(a.virtual_card_number)+'</span><span class="mu">Причина блокировки: '+esc(a.reason||'не указана')+'</span><div style="margin:8px 0">'+esc(a.body)+'</div><input class="in" placeholder="Комментарий судьи (необязательно)" maxlength="200" style="margin-bottom:8px"><div class="row" style="gap:8px"><button class="btn sm" data-v="grant">✅ Разблокировать</button><button class="btn sm o" data-v="deny">❌ Отклонить</button></div></div>').join(''):'<div class="mu">Новых апелляций нет</div>';
+      box.querySelectorAll('.card').forEach(c=>c.querySelectorAll('[data-v]').forEach(b=>b.onclick=async()=>{
+        b.disabled=true;
+        try{const x=await pmRpc('pm_collector_verdict',{p_id:c.dataset.id,p_verdict:b.dataset.v,p_note:c.querySelector('input').value.trim()});if(x.error)throw x.error;toast(b.dataset.v==='grant'?'Игрок разблокирован':'Апелляция отклонена');load()}
+        catch(e){toast(e.message||'Не удалось');b.disabled=false}
+      }));
+    }catch(e){box.innerHTML='<div class="mu" style="color:var(--r)">'+esc(e.message||'Не удалось загрузить')+'</div>'}
+  };
+  load();
+}
+const PETS=[{k:'rooster',n:'Петух',e:'🐓',p:100000,y:0.015,feed:300,care:250}];
+const PET_MAX=3,H=36e5,DAYMS=864e5,PET_FINE=10000;
+const petBase=d=>d.p*d.y/24;
+const fmtHM=ms=>{ms=Math.max(0,ms);const h=Math.floor(ms/H),m=Math.floor(ms%H/6e4);return (h?h+' ч ':'')+m+' мин'};
+function petEq(p,t0,t1){
+  const bp=[t0,t1];
+  [p.fed+DAYMS,p.fed+72*H,p.groom||0].forEach(x=>{if(x>t0&&x<t1)bp.push(x)});
+  bp.sort((a,b)=>a-b);
+  let sum=0;
+  for(let i=0;i<bp.length-1;i++){
+    const a=bp[i],b=bp[i+1],mid=(a+b)/2;
+    let f=mid<p.fed+DAYMS?1:(mid<p.fed+72*H?0.5:0);
+    if(f>0&&p.groom&&mid<p.groom)f*=1.25;
+    sum+=f*(b-a);
+  }
+  return sum/H;
+}
+function petRate(){
+  const n=Date.now();
+  return (S.pets||[]).reduce((t,p)=>{const d=PETS.find(x=>x.k===p.k);if(!d)return t;if(!p.fed)p.fed=n;return t+petBase(d)*petEq(p,n,n+6e4)*60},0);
+}
+function petPending(){
+  const n=Date.now(),pp=S.pp||(S.pp={p:0,t:n});let v=pp.p,cap=0;
+  (S.pets||[]).forEach(p=>{const d=PETS.find(x=>x.k===p.k);if(!d)return;if(!p.fed)p.fed=n;v+=petBase(d)*petEq(p,pp.t,n);cap+=petBase(d)*24*1.25});
+  return Math.min(cap,v);
+}
+function petAccrue(){const v=petPending();S.pp={p:v,t:Date.now()};return v}
+function petStat(p){
+  const n=Date.now(),a=p.fed+DAYMS,b=p.fed+72*H;
+  return (n<a?'😊 Сыт ещё '+fmtHM(a-n):'😟 Голоден! Доход ×0,5, умрёт через '+fmtHM(b-n))+(p.groom>n?' · 🧼 ухожен':'');
+}
+function petCheck(){
+  if(!S||!S.pets||!S.pets.length)return false;
+  const n=Date.now();let ch=false;
+  S.pets.forEach(p=>{
+    if(!p.fed)p.fed=n;
+    const d=PETS.find(x=>x.k===p.k)||{n:'Питомец'};
+    if(n>p.fed+DAYMS&&!p.n1){p.n1=1;ch=true;note('😟 '+d.n+' проголодался: доход вдвое меньше. Покормите!')}
+    if(n>p.fed+60*H&&!p.n2){p.n2=1;ch=true;note('⚠️ '+d.n+' умрёт меньше чем через 12 часов, и с вас спишут '+rub(PET_FINE)+'! Срочно покормите')}
+  });
+  const gone=S.pets.filter(p=>n>=p.fed+72*H);
+  if(gone.length){
+    petAccrue();
+    S.pets=S.pets.filter(p=>!gone.includes(p));
+    gone.forEach(p=>{const d=PETS.find(x=>x.k===p.k)||{n:'Питомец',e:'🐾'};const pen=Math.min(Math.max(0,S.bal),PET_FINE);S.bal-=pen;log('🪦 '+d.n+' умер от голода: штраф −'+rub(pen));note('🪦 '+d.n+' умер: за ним слишком долго не ухаживали. С вас списано '+rub(pen))});
+    ch=true;
+  }
+  return ch;
+}
+function petBuy(k){
+  const d=PETS.find(p=>p.k===k);if(!d)return;
+  if((S.pets||[]).filter(x=>x.k===k).length>=PET_MAX){toast('Максимум '+PET_MAX+' шт.');return}
+  if(S.bal<d.p){toast('Не хватает денег: нужно '+rub(d.p));return}
+  petAccrue();S.bal-=d.p;(S.pets=S.pets||[]).push({id:pmUid(),k,fed:Date.now()});
+  log('🐾 Куплен питомец: '+d.n+' за '+rub(d.p));sfx.win();save();render();toast(d.n+' теперь ваш! '+d.e);
+}
+function petFeed(id){
+  const ps=id==='all'?(S.pets||[]):(S.pets||[]).filter(x=>x.id===id);
+  if(!ps.length)return;
+  const cost=ps.reduce((t,p)=>t+((PETS.find(x=>x.k===p.k)||{feed:0}).feed),0);
+  if(S.bal<cost){toast('Не хватает денег на корм: нужно '+rub(cost));return}
+  petAccrue();S.bal-=cost;
+  ps.forEach(p=>{p.fed=Date.now();p.n1=0;p.n2=0});
+  log('🌽 Питомцы накормлены: −'+rub(cost));sfx.tick();save();render();toast('Накормлено! −'+rub(cost));
+}
+function petCare(id){
+  const p=(S.pets||[]).find(x=>x.id===id);if(!p)return;
+  const d=PETS.find(x=>x.k===p.k);if(!d)return;
+  if(S.bal<d.care){toast('Не хватает денег: нужно '+rub(d.care));return}
+  petAccrue();S.bal-=d.care;p.groom=Date.now()+DAYMS;
+  log('🧼 Уход за питомцем: −'+rub(d.care));sfx.win();save();render();toast('Питомец ухожен: +25% дохода на сутки');
+}
+function petClaim(){
+  const a=Math.floor(petAccrue());
+  if(a<1){toast('Пока нечего забирать');return}
+  S.bal+=a;S.pp.p-=a;log('🐾 Доход питомцев: +'+rub(a));sfx.win();save();render();toast('Получено '+rub(a));
+}
+function petsHtml(){
+  const mine=S.pets||[];let h='';
+  mine.forEach(p=>{if(!p.fed)p.fed=Date.now()});
+  if(mine.length){
+    h+='<div class="card" style="border-color:var(--r)"><div class="row"><div><b>🐾 Доход питомцев</b><span class="mu">+'+fp(petRate())+' в час сейчас</span><span class="mu">Копится до 24 часов</span></div><div style="text-align:right"><b id="ppa" style="color:var(--r)">'+fp(petPending())+'</b><button class="btn sm" style="margin-top:6px" onclick="petClaim()">Забрать</button></div></div></div>';
+    h+=mine.map(p=>{const d=PETS.find(x=>x.k===p.k)||{n:'Питомец',e:'🐾',feed:0,care:0};return '<div class="card"><div class="row"><div style="font-size:34px">'+d.e+'</div><div style="flex:1;padding-left:8px"><b>'+esc(d.n)+'</b><span class="mu pst" data-id="'+esc(p.id)+'">'+petStat(p)+'</span></div></div><div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" onclick="petFeed(\''+esc(p.id)+'\')">🌽 Покормить · '+rub(d.feed)+'</button><button class="btn sm o" onclick="petCare(\''+esc(p.id)+'\')">🧼 Уход · '+rub(d.care)+'</button></div></div>'}).join('');
+    if(mine.length>1)h+='<button class="btn o" style="margin-bottom:10px" onclick="petFeed(\'all\')">🌽 Покормить всех</button>';
+    h+='<div class="mu" style="margin:0 4px 10px">Кормить нужно раз в сутки. Без корма доход вдвое меньше, а если не кормить 3 дня, питомец умирает и с вас спишут '+rub(PET_FINE)+'. Уход даёт +25% дохода на сутки.</div>';
+  }else h+='<div class="mu" style="margin:8px 0">Питомцы приносят доход каждый час, но их нужно кормить.</div>';
+  h+=PETS.map(d=>{const have=mine.filter(x=>x.k===d.k).length;return '<div class="card"><div class="row"><div style="font-size:34px">'+d.e+'</div><div style="flex:1;padding-left:8px"><b>'+esc(d.n)+'</b><span class="mu">доход +'+fp(petBase(d))+' в час · корм '+rub(d.feed)+' в день · у вас: '+have+'/'+PET_MAX+'</span></div><div style="text-align:right"><b style="color:var(--r)">'+rub(d.p)+'</b><button class="btn sm" style="margin-top:6px'+(have>=PET_MAX?';opacity:.4':'')+'" onclick="petBuy(\''+d.k+'\')">Купить</button></div></div></div>'}).join('');
+  return h;
+}
+setInterval(()=>{
+  const e=document.getElementById('ppa');if(e&&S)e.textContent=fp(petPending());
+  document.querySelectorAll('.pst').forEach(x=>{const p=(S.pets||[]).find(v=>v.id===x.dataset.id);if(p)x.textContent=petStat(p)});
+},5000);
+let pmNwNext=0,pmNews=[];
+function newsHtml(){
+  if(!pmNews.length)return '';
+  const nm=a=>{const x=(pmEx||[]).find(v=>v.asset===a);return x?x.emoji+' '+x.name:a};
+  return '<div class="card"><b>📰 Новости биржи</b>'+pmNews.slice(0,5).map(x=>'<div class="row" style="padding:6px 0;gap:8px"><span style="flex:1">'+esc(x.headline)+'<span class="mu">'+esc(nm(x.asset))+' · '+new Date(x.created_at).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</span></span><b style="color:'+(Number(x.pct)>=0?'#1fa84f':'#d40000')+'">'+(Number(x.pct)>=0?'▲ +':'▼ ')+Number(x.pct)+'%</b></div>').join('')+'</div>';
+}
+async function pmNewsSync(){
+  if(!S||!pmClient||Date.now()<pmNwNext)return;
+  try{
+    await pmEnsureAnonymousAuth();
+    const r=await pmRpc('pm_news_list');if(r.error)throw r.error;
+    const L=r.data||[];pmNews=L;
+    if(!S.nw){S.nw=L.map(x=>x.id);save();return}
+    let ch=false;
+    for(const x of L.slice().reverse()){
+      if(!S.nw.includes(x.id)){S.nw.push(x.id);S.nw=S.nw.slice(-50);note('📰 '+x.headline+' ('+x.asset+' '+(Number(x.pct)>0?'+':'')+Number(x.pct)+'%)');ch=true}
+    }
+    if(ch){save();render()}
+  }catch(e){pmNwNext=Date.now()+300000}
+}
+const NEWS_UP=['{n} признан лучшим активом года','Президент банка купил {n}','Учёные нашли новое применение для {n}','Друзья массово скупают {n}'];
+const NEWS_DN=['Налоговая заинтересовалась {n}','Петух клюнул {n}, цена упала','Слухи о проблемах у {n}','Инвесторы продают {n} на панике'];
+async function newsAdmin(){
+  let A=null;
+  try{const r=await pmRpc('pm_exchange_state');A=(r&&r.data)||null}catch(e){A=null}
+  if(!A||!A.length)A=pmEx||[];
+  if(!A.length){toast('Курсы биржи не загрузились. Откройте биржу и повторите');return}
+  let dir=1,pct=15;
+  const d=sheet('<b style="font-size:20px">📰 Новость на биржу</b><select class="in" id="nas" style="margin-top:12px">'+A.map(a=>'<option value="'+esc(a.asset)+'">'+esc(a.emoji+' '+a.name+' · '+a.asset)+'</option>').join('')+'</select><div class="chips"><button class="chip" id="nd1">📈 Вверх</button><button class="chip" id="nd0">📉 Вниз</button></div><div class="chips"><button class="chip" data-p="5">5%</button><button class="chip" data-p="15">15%</button><button class="chip" data-p="30">30%</button><button class="chip" data-p="50">50%</button></div><input class="in" id="nh" maxlength="140" placeholder="Заголовок новости"><button class="btn o" id="nrand">🎲 Случайный заголовок</button><button class="btn" id="npub">Опубликовать</button><button class="btn o" id="ncl">Закрыть</button>');
+  const q=s=>d.querySelector(s);
+  const paint=()=>{q('#nd1').className='chip'+(dir===1?' on':'');q('#nd0').className='chip'+(dir===0?' on':'');d.querySelectorAll('[data-p]').forEach(b=>{b.className='chip'+(+b.dataset.p===pct?' on':'')})};
+  q('#nd1').onclick=()=>{dir=1;paint()};q('#nd0').onclick=()=>{dir=0;paint()};
+  d.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{pct=+b.dataset.p;paint()});
+  q('#nrand').onclick=()=>{
+    const a=A.find(x=>x.asset===q('#nas').value)||A[0],T=dir?NEWS_UP:NEWS_DN;
+    q('#nh').value=T[Math.floor(Math.random()*T.length)].replace('{n}',a.name);
+  };
+  q('#ncl').onclick=()=>d.remove();
+  q('#npub').onclick=async()=>{
+    const h=q('#nh').value.trim(),b=q('#npub');
+    if(!h){toast('Введите заголовок');return}
+    b.disabled=true;b.textContent='Публикуем…';
+    try{
+      const r=await pmRpc('pm_collector_news',{p_asset:q('#nas').value,p_headline:h,p_pct:dir?pct:-pct});if(r.error)throw r.error;
+      toast('Новость опубликована, курс изменился');d.remove();pmNwNext=0;pmNewsSync();pmExLoad(true);
+    }catch(e){toast(e.message||'Не удалось опубликовать');b.disabled=false;b.textContent='Опубликовать'}
+  };
+  paint();
+}
+let pmSpNext=0;
+async function pmSupportSync(){
+  if(!S||!pmClient||Date.now()<pmSpNext)return;
+  try{
+    await pmEnsureAnonymousAuth();
+    const r=await pmRpc('pm_support_unread');if(r.error)throw r.error;
+    S.su=S.su||[];let ch=false;
+    for(const x of (r.data||[])){if(!S.su.includes(x.id)){S.su.push(x.id);S.su=S.su.slice(-50);note('💬 Поддержка: '+x.body);ch=true}}
+    if(ch){save();render()}
+  }catch(e){pmSpNext=Date.now()+300000}
+}
+function bubbles(L,staffMine){
+  return L.map(m=>{const mine=staffMine?m.from_staff:!m.from_staff;return '<div style="display:flex;justify-content:'+(mine?'flex-end':'flex-start')+';margin:6px 0"><div style="max-width:80%;padding:8px 12px;border-radius:14px;background:'+(mine?'var(--r)':'var(--card)')+';color:'+(mine?'#fff':'var(--tx)')+';word-break:break-word">'+esc(m.body)+'</div></div>'}).join('')||'<div class="mu" style="text-align:center;margin:10px 0">Сообщений пока нет. Напишите нам.</div>';
+}
+function supportChat(){
+  const d=sheet('<b style="font-size:20px">💬 Поддержка</b><div id="schat" style="margin:10px 0;max-height:45vh;overflow:auto;border:1px solid var(--bd);border-radius:14px;padding:6px 10px"></div><input class="in" id="smsg" maxlength="500" placeholder="Ваше сообщение"><button class="btn" id="ssend">Отправить</button><button class="btn o" id="scl">Закрыть</button>');
+  const box=d.querySelector('#schat');
+  const load=async()=>{
+    try{
+      await pmEnsureAnonymousAuth();
+      const r=await pmRpc('pm_support_list');if(r.error)throw r.error;
+      const L=r.data||[];box.innerHTML=bubbles(L,false);box.scrollTop=box.scrollHeight;
+      S.su=S.su||[];L.forEach(m=>{if(m.from_staff&&!S.su.includes(m.id))S.su.push(m.id)});
+    }catch(e){box.innerHTML='<div class="mu" style="color:var(--r)">'+esc(e.message||'Чат недоступен')+'</div>'}
+  };
+  d.querySelector('#scl').onclick=()=>d.remove();
+  d.querySelector('#ssend').onclick=async()=>{
+    const t=d.querySelector('#smsg').value.trim(),b=d.querySelector('#ssend');
+    if(!t){toast('Введите сообщение');return}
+    b.disabled=true;
+    try{const r=await pmRpc('pm_support_send',{p_body:t});if(r.error)throw r.error;d.querySelector('#smsg').value='';await load()}
+    catch(e){toast(e.message||'Не удалось отправить')}
+    b.disabled=false;
+  };
+  load();
+  const iv=setInterval(()=>{if(!document.body.contains(d)){clearInterval(iv);return}load()},10000);
+}
+function supportAdmin(){
+  const d=sheet('<b style="font-size:20px">💬 Поддержка</b><div id="sbox" style="margin-top:12px"></div><button class="btn o" id="scl2">Закрыть</button>');
+  const box=d.querySelector('#sbox');
+  d.querySelector('#scl2').onclick=()=>d.remove();
+  const threads=async()=>{
+    box.innerHTML='<div class="mu">Загружаем…</div>';
+    try{
+      const r=await pmRpc('pm_collector_support_threads');if(r.error)throw r.error;
+      const L=r.data||[];
+      box.innerHTML=L.length?L.map(t=>'<div class="card" data-u="'+esc(t.user_id)+'" data-n="'+esc(t.full_name)+'" style="cursor:pointer"><div class="row"><div><b>'+esc(t.full_name)+(t.unread>0?' <span class="tag">'+t.unread+'</span>':'')+'</b><span class="mu">'+esc(t.virtual_card_number)+'</span><span class="mu">'+esc(String(t.last_body).slice(0,70))+'</span></div></div></div>').join(''):'<div class="mu">Обращений пока нет</div>';
+      box.querySelectorAll('[data-u]').forEach(c=>c.onclick=()=>thread(c.dataset.u,c.dataset.n));
+    }catch(e){box.innerHTML='<div class="mu" style="color:var(--r)">'+esc(e.message||'Не удалось загрузить')+'</div>'}
+  };
+  const thread=async(u,name)=>{
+    box.innerHTML='<div class="row" style="margin-bottom:8px"><b>'+esc(name)+'</b><button class="btn sm o" id="sback">← Назад</button></div><div id="smsgs" style="max-height:40vh;overflow:auto;border:1px solid var(--bd);border-radius:14px;padding:6px 10px"></div><input class="in" id="srep" maxlength="500" placeholder="Ответ игроку" style="margin-top:10px"><button class="btn" id="srsend">Ответить</button><button class="btn o" id="sclose" style="margin-top:8px">✅ Закрыть обращение и удалить чат</button>';
+    const m=box.querySelector('#smsgs');
+    const load=async()=>{
+      try{const r=await pmRpc('pm_collector_support_thread',{p_user:u});if(r.error)throw r.error;m.innerHTML=bubbles(r.data||[],true);m.scrollTop=m.scrollHeight}
+      catch(e){m.innerHTML='<div class="mu" style="color:var(--r)">'+esc(e.message||'Ошибка')+'</div>'}
+    };
+    box.querySelector('#sback').onclick=threads;
+    const bc=box.querySelector('#sclose');let armed=false;
+    bc.onclick=async()=>{
+      if(!armed){armed=true;bc.textContent='Нажмите ещё раз: чат будет удалён';setTimeout(()=>{armed=false;bc.textContent='✅ Закрыть обращение и удалить чат'},4000);return}
+      armed=false;bc.disabled=true;
+      try{const r=await pmRpc('pm_collector_support_close',{p_user:u});if(r.error)throw r.error;toast('Обращение закрыто, чат удалён');threads()}
+      catch(e){toast(e.message||'Не удалось закрыть');bc.disabled=false;bc.textContent='✅ Закрыть обращение и удалить чат'}
+    };
+    box.querySelector('#srsend').onclick=async()=>{
+      const t=box.querySelector('#srep').value.trim(),b=box.querySelector('#srsend');
+      if(!t){toast('Введите ответ');return}
+      b.disabled=true;
+      try{const r=await pmRpc('pm_collector_support_reply',{p_user:u,p_body:t});if(r.error)throw r.error;box.querySelector('#srep').value='';await load()}
+      catch(e){toast(e.message||'Не удалось отправить')}
+      b.disabled=false;
+    };
+    load();
+  };
+  threads();
+}
+async function collectorLogin(){
+  const d=sheet('<b style="font-size:20px">Режим коллектора</b><div class="mu" style="margin:8px 0">Введите специальный код доступа. Проверка выполняется Supabase.</div><input class="in" id="pmcc" type="password" autocomplete="off" placeholder="Код коллектора"><button class="btn" id="pmcin">Проверить доступ</button><button class="btn o" id="pmclose">Закрыть</button>');
+  d.querySelector('#pmclose').onclick=()=>d.remove();
+  d.querySelector('#pmcin').onclick=async()=>{
+    const code=d.querySelector('#pmcc').value.trim();
+    if(!code){toast('Введите код');return}
+    const b=d.querySelector('#pmcin');b.disabled=true;b.textContent='Проверяем…';
+    try{
+      await pmEnsureAnonymousAuth();
+      const {data,error}=await pmRpc('pm_collector_enter',{p_code:code});
+      if(error)throw error;
+      if(!data?.ok)throw new Error('Доступ не подтверждён');
+      pmCollectorSession=true;d.remove();collectorPanel();
+    }catch(e){toast(e.message||'Ошибка проверки');b.disabled=false;b.textContent='Проверить доступ'}
+  };
+}
+function collectorPanel(){
+  const d=sheet('<div class="row"><b style="font-size:20px">🔎 Коллектор</b><button class="btn sm o" id="pmcl">Закрыть</button></div><div class="mu" style="margin:8px 0 12px">Поиск только по виртуальному номеру PetuhMobile. Личные контакты и адреса не отображаются.</div><input class="in" id="pmcard" placeholder="Например, PM + виртуальный номер" autocapitalize="characters"><button class="btn" id="pmfind">Найти должника</button><button class="btn o" id="pmlist">📋 Список должников</button><div id="pmlistout" style="margin-top:10px"></div><button class="btn o" id="pmsup" style="margin-top:8px">💬 Поддержка (обращения)</button><button class="btn o" id="pmnews" style="margin-top:8px">📰 Новость на биржу</button><button class="btn o" id="pmcourt" style="margin-top:8px">⚖️ Суд (апелляции)</button><button class="btn o" id="pmvid" style="margin-top:8px">🎬 Управление лентой видео</button><button class="btn o" id="pmpl" style="margin-top:8px">👥 Все игроки</button><input class="in" id="pmplq" placeholder="Поиск по имени или номеру" style="margin-top:8px;display:none"><div id="pmplout" style="margin-top:10px"></div><input class="in" id="pman" maxlength="300" placeholder="Объявление всем игрокам" style="margin-top:14px"><button class="btn o" id="pmann">📢 Отправить объявление всем</button><hr style="border:0;border-top:1px solid var(--bd);margin:14px 0"><div class="mu" style="margin-bottom:6px">Разрешить регистрацию: код доступа нового игрока</div><input class="in" id="pmdev" placeholder="Код доступа (6 цифр)" inputmode="numeric"><button class="btn o" id="pmapr">✅ Разрешить</button><div id="pmresult" style="margin-top:12px"></div><button class="btn o" id="pmexit">Завершить сеанс коллектора</button>');
+  d.querySelector('#pmcl').onclick=()=>d.remove();
+  d.querySelector('#pmsup').onclick=()=>supportAdmin();
+  d.querySelector('#pmnews').onclick=()=>newsAdmin();
+  d.querySelector('#pmcourt').onclick=()=>courtAdmin();
+  d.querySelector('#pmvid').onclick=()=>vidAdmin();
+  d.querySelector('#pmpl').onclick=async()=>{
+    const b=d.querySelector('#pmpl'),o=d.querySelector('#pmplout'),q=d.querySelector('#pmplq');
+    b.disabled=true;b.textContent='Загружаем…';
+    try{
+      const r=await pmRpc('pm_collector_players');if(r.error)throw r.error;
+      const L=r.data||[];
+      const draw=()=>{
+        const t=q.value.trim().toLowerCase(),F=L.filter(x=>!t||String(x.full_name).toLowerCase().includes(t)||String(x.virtual_card_number).toLowerCase().includes(t));
+        o.innerHTML=F.length?F.map(x=>'<div class="card" data-n="'+esc(x.virtual_card_number)+'" style="cursor:pointer'+(x.banned?';opacity:.6':'')+'"><div class="row"><div><b>'+esc(x.full_name)+(x.banned?' 🚫':'')+'</b><span class="mu">'+esc(x.virtual_card_number)+'</span><span class="mu">создан '+new Date(x.created_at).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</span></div>'+(x.debt>0?'<b style="color:var(--r)">'+rub(x.debt)+'</b>':'')+'</div></div>').join(''):'<div class="mu">Никого не найдено</div>';
+        o.querySelectorAll('[data-n]').forEach(e=>e.onclick=()=>{d.querySelector('#pmcard').value=e.dataset.n;d.querySelector('#pmfind').click()});
+      };
+      q.style.display='block';q.oninput=draw;draw();
+    }catch(e){toast(e.message||'Не удалось загрузить игроков')}
+    b.disabled=false;b.textContent='👥 Все игроки';
+  };
+  d.querySelector('#pmapr').onclick=async()=>{
+    const b=d.querySelector('#pmapr'),v=d.querySelector('#pmdev').value.trim();
+    if(!/^\d{6}$/.test(v)){toast('Код — 6 цифр');return}
+    b.disabled=true;b.textContent='…';
+    try{const r=await pmRpc('pm_collector_approve',{p_device:v});if(r.error)throw r.error;d.querySelector('#pmdev').value='';toast('Регистрация разрешена для кода '+v)}catch(e){toast(e.message||'Не удалось')}
+    b.disabled=false;b.textContent='✅ Разрешить';
+  };
+  d.querySelector('#pmann').onclick=async()=>{
+    const b=d.querySelector('#pmann'),t=d.querySelector('#pman').value.trim();
+    if(!t){toast('Введите текст объявления');return}
+    b.disabled=true;b.textContent='Отправляем…';
+    try{const r=await pmRpc('pm_collector_announce',{p_body:t});if(r.error)throw r.error;d.querySelector('#pman').value='';toast('Объявление отправлено всем')}catch(e){toast(e.message||'Не удалось отправить')}
+    b.disabled=false;b.textContent='📢 Отправить объявление всем';
+  };
+  d.querySelector('#pmlist').onclick=async()=>{
+    const lb=d.querySelector('#pmlist'),lo=d.querySelector('#pmlistout');
+    lb.disabled=true;lb.textContent='Загружаем…';
+    try{
+      const r=await pmRpc('pm_collector_debtors');if(r.error)throw r.error;
+      const L=r.data||[];
+      lo.innerHTML=L.length?'<div class="mu" style="margin-bottom:6px">Нажмите на человека: можно списать деньги или отправить сообщение</div>'+L.map(x=>{
+        const ms=new Date(x.next_due)-Date.now(),late=x.overdue||ms<=0,ab=Math.abs(ms),n=ab<864e5?Math.ceil(ab/36e5)+' ч':Math.ceil(ab/864e5)+' дн.';
+        return '<div class="card" data-n="'+esc(x.virtual_card_number)+'" style="cursor:pointer'+(late?';border-color:var(--r)':'')+'"><div class="row"><div><b>'+esc(x.full_name)+'</b><span class="mu">'+esc(x.virtual_card_number)+' · кредитов: '+esc(x.loans)+'</span><span class="mu" style="'+(late?'color:var(--r);font-weight:700':'')+'">'+(late?'просрочен ':'осталось ')+n+'</span></div><b style="color:var(--r)">'+rub(x.total_debt)+'</b></div></div>';
+      }).join(''):'<div class="mu">Открытых кредитов нет</div>';
+      lo.querySelectorAll('[data-n]').forEach(e=>e.onclick=()=>{d.querySelector('#pmcard').value=e.dataset.n;d.querySelector('#pmfind').click()});
+    }catch(e){toast(e.message||'Не удалось загрузить список')}
+    lb.disabled=false;lb.textContent='📋 Список должников';
+  };
+  d.querySelector('#pmexit').onclick=async()=>{
+    try{await pmRpc('pm_collector_exit')}catch(e){}
+    pmCollectorSession=false;d.remove();toast('Сеанс коллектора завершён');
+  };
+  d.querySelector('#pmfind').onclick=async()=>{
+    const num=d.querySelector('#pmcard').value.trim().toUpperCase();
+    const out=d.querySelector('#pmresult'),b=d.querySelector('#pmfind');
+    if(!num){toast('Введите виртуальный номер');return}
+    b.disabled=true;b.textContent='Поиск…';out.innerHTML='';
+    try{
+      const {data,error}=await pmRpc('pm_collector_lookup',{p_virtual_card_number:num});
+      if(error)throw error;
+      out.innerHTML=`<div class="card"><b>${esc(data.full_name)}</b><span class="mu">Виртуальный номер: ${esc(data.virtual_card_number)}</span><div class="row" style="margin-top:12px"><span>Общая задолженность</span><b style="color:var(--r)">${rub(Number(data.total_debt)||0)}</b></div><div class="row" style="margin-top:8px"><span>Активные кредиты</span><b>${Number(data.active_loans)||0}</b></div><div class="row" style="margin-top:8px"><span>Просроченные кредиты</span><b>${Number(data.overdue_loans)||0}</b></div><div style="margin-top:12px"><span class="tag">${esc(data.debt_status)}</span></div>${data.phone?'<div class="row" style="margin-top:12px"><b>📞 '+esc(data.phone)+'</b><a class="btn sm" href="tel:'+esc(String(data.phone).replace(/[^0-9+]/g,''))+'" style="text-decoration:none">Позвонить</a></div>':'<div class="mu" style="margin-top:12px">Телефон не указан</div>'}<div style="margin-top:14px"><input class="in" id="pmsa" type="number" inputmode="numeric" placeholder="Сумма, ₽"><button class="btn" id="pmsz">Списать указанную сумму</button><button class="btn o" id="pmall">Забрать всё, что есть на карте</button><input class="in" id="pmmsg" maxlength="200" placeholder="Сообщение должнику (до 200 символов)" style="margin-top:14px"><button class="btn o" id="pmsend">📩 Отправить сообщение</button><button class="btn o" id="pmjail">🔒 Посадить в тюрьму на 24 ч</button><button class="btn o" id="pmfree">🔓 Освободить из тюрьмы</button><input class="in" id="pmbr" maxlength="120" placeholder="Причина блокировки (необязательно)" style="margin-top:14px"><button class="btn o" id="pmban">🚫 Заблокировать аккаунт</button><button class="btn o" id="pmunban">✅ Разблокировать аккаунт</button><button class="btn o" id="pmzero">🧹 Обнулить деньги и вещи</button><button class="btn o" id="pmdel">🗑 Удалить аккаунт</button></div></div>`;
+      const go=async(amt,btn,label)=>{
+        btn.disabled=true;btn.textContent='Отправляем…';
+        try{const r=await pmRpc('pm_collector_seize',{p_virtual_card_number:num,p_amount:amt});if(r.error)throw r.error;toast('Заявка отправлена. Деньги спишутся, когда должник откроет приложение')}catch(e){toast(e.message||'Не удалось списать')}
+        btn.disabled=false;btn.textContent=label;
+      };
+      const b1=out.querySelector('#pmsz'),b2=out.querySelector('#pmall');
+      b1.onclick=()=>{const a=Math.floor(+out.querySelector('#pmsa').value);if(!(a>0)){toast('Введите сумму');return}go(a,b1,'Списать указанную сумму')};
+      b2.onclick=()=>go(10000000,b2,'Забрать всё, что есть на карте');
+      const b3=out.querySelector('#pmsend');
+      b3.onclick=async()=>{
+        const t=out.querySelector('#pmmsg').value.trim();
+        if(!t){toast('Введите сообщение');return}
+        b3.disabled=true;b3.textContent='Отправляем…';
+        try{const r=await pmRpc('pm_collector_message',{p_virtual_card_number:num,p_body:t});if(r.error)throw r.error;out.querySelector('#pmmsg').value='';toast('Сообщение отправлено')}catch(e){toast(e.message||'Не удалось отправить')}
+        b3.disabled=false;b3.textContent='📩 Отправить сообщение';
+      };
+      const jgo=async(fn,args,msg,btn,label)=>{btn.disabled=true;btn.textContent='…';try{const r=await pmRpc(fn,args);if(r.error)throw r.error;toast(msg)}catch(e){toast(e.message||'Не удалось')}btn.disabled=false;btn.textContent=label};
+      const bj=out.querySelector('#pmjail'),bf=out.querySelector('#pmfree');
+      bj.onclick=()=>jgo('pm_collector_jail',{p_virtual_card_number:num,p_hours:24},'Посажен в тюрьму на 24 часа',bj,'🔒 Посадить в тюрьму на 24 ч');
+      bf.onclick=()=>jgo('pm_collector_unjail',{p_virtual_card_number:num},'Освобождён',bf,'🔓 Освободить из тюрьмы');
+      const bb=out.querySelector('#pmban'),bu=out.querySelector('#pmunban');let armed=false;
+      bb.onclick=()=>{
+        if(!armed){armed=true;bb.textContent='Нажмите ещё раз, чтобы заблокировать';setTimeout(()=>{armed=false;bb.textContent='🚫 Заблокировать аккаунт'},4000);return}
+        armed=false;jgo('pm_collector_ban',{p_virtual_card_number:num,p_reason:out.querySelector('#pmbr').value.trim()},'Аккаунт заблокирован',bb,'🚫 Заблокировать аккаунт');
+      };
+      bu.onclick=()=>jgo('pm_collector_unban',{p_virtual_card_number:num},'Аккаунт разблокирован',bu,'✅ Разблокировать аккаунт');
+      const twoTap=(btn,label,fn)=>{let on=false;btn.onclick=()=>{if(!on){on=true;btn.textContent='Нажмите ещё раз';setTimeout(()=>{on=false;btn.textContent=label},4000);return}on=false;fn()}};
+      const bz=out.querySelector('#pmzero'),bd=out.querySelector('#pmdel');
+      twoTap(bz,'🧹 Обнулить деньги и вещи',()=>jgo('pm_collector_reset',{p_virtual_card_number:num},'Обнуление отправлено. Сработает, когда игрок откроет приложение',bz,'🧹 Обнулить деньги и вещи'));
+      twoTap(bd,'🗑 Удалить аккаунт',()=>jgo('pm_collector_delete_user',{p_virtual_card_number:num},'Аккаунт удалён',bd,'🗑 Удалить аккаунт'));
+    }catch(e){out.innerHTML=`<div class="card" style="color:var(--r)">${esc(e.message||'Не удалось выполнить поиск')}</div>`}
+    b.disabled=false;b.textContent='Найти должника';
+  };
+}
+
+const VER='57';
+async function upd(){try{const r=await fetch('index.html?t='+Date.now(),{cache:'no-store'});const t=await r.text();const m=/const VER='(\d+)'/.exec(t);if(m&&m[1]!==VER&&location.search!=='?v='+m[1])location.replace(location.pathname+'?v='+m[1])}catch(e){}}
+upd();document.addEventListener('visibilitychange',()=>{if(!document.hidden){upd();if(check()){save();render()}}});
+mig();if(S){check();save()}
+render();
+if(S)pmSyncProfile().then(()=>{pmQueueLoans();pmSeizureSync();pmTransferSync();pmMsgSync();pmSimSync();pmPhoneSync();pmSaleSync();pmAnnSync();pmJailSync();pmBanSync();pmResetSync();pmNewsSync();pmSupportSync()}).catch(()=>{});
+setInterval(()=>{if(check()){save();render()}else if(tab==='svc')render();pmQueueLoans();pmSeizureSync();pmTransferSync();pmMsgSync();pmSimSync();pmPhoneSync();pmSaleSync();pmAnnSync();pmJailSync();pmBanSync();pmResetSync();pmNewsSync();pmSupportSync();if(tab==='job'&&sub==='exchange')pmExLoad(true)},30000);
+</script>
+</body>
+</html>
